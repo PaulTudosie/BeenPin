@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# Extra cleanup (recommended)
+.metadata
+
+# Generated plugin files (sometimes missed)
+linux/flutter/generated_plugin_registrant.*
+macos/Flutter/GeneratedPluginRegistrant.swift
+windows/flutter/generated_plugin_registrant.*
