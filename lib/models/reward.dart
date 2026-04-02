@@ -8,6 +8,10 @@ class Reward {
   final String expiryDate;
   final String partnerUrl;
 
+  final String partnerCategory;
+  final String offerDescription;
+  final String unlockedFromSpot;
+
   const Reward({
     required this.partnerName,
     required this.partnerAddress,
@@ -15,9 +19,12 @@ class Reward {
     required this.qrCode,
     required this.expiryDate,
     required this.partnerUrl,
+    required this.partnerCategory,
+    required this.offerDescription,
+    required this.unlockedFromSpot,
   });
 
-  factory Reward.generate(String spotId) {
+  factory Reward.generate(String spotId, {String? spotName}) {
     final today = DateFormat('yyyyMMdd').format(DateTime.now());
     final displayDate = DateFormat('dd MMM yyyy').format(DateTime.now());
     final random = (1000 + DateTime.now().millisecondsSinceEpoch % 9000).toString();
@@ -29,6 +36,9 @@ class Reward {
       qrCode: 'BEEN-$spotId-$today-$random',
       expiryDate: displayDate,
       partnerUrl: 'https://www.google.com',
+      partnerCategory: 'Café',
+      offerDescription: 'Available with any breakfast or brunch order.',
+      unlockedFromSpot: spotName ?? 'this spot',
     );
   }
 }

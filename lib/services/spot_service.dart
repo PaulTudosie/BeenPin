@@ -6,7 +6,7 @@ class SpotService {
       Spot(id: '1', name: 'Hidden Graffiti', lat: 44.4325, lng: 26.1039, type: 'graffiti'),
       Spot(id: '2', name: 'Abandoned Factory', lat: 44.4300, lng: 26.1065, type: 'urban'),
       Spot(id: '3', name: 'Old Staircase', lat: 44.4352, lng: 26.0987, type: 'architecture'),
-      Spot(id: '4', name: 'Arcul de Triumf', lat: 44.4502, lng: 26.0794, type: 'monument'),
+      Spot(id: '4', name: 'Arcul de Triumf', lat: 44.467, lng: 26.0781, type: 'monument'),
       Spot(id: '5', name: 'Ateneul Român', lat: 44.4413, lng: 26.0966, type: 'culture'),
       Spot(id: '6', name: 'Parcul Herăstrău', lat: 44.4663, lng: 26.0858, type: 'nature'),
       Spot(id: '7', name: 'Palatul Parlamentului', lat: 44.4273, lng: 26.0873, type: 'monument'),

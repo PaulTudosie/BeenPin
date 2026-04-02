@@ -10,6 +10,7 @@ import 'package:been/services/spot_service.dart';
 import 'package:been/features/map/reward_popup.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
+import 'package:been/features/reward/reward_detail_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -144,7 +145,13 @@ class _MapScreenState extends State<MapScreen> {
     if (!mounted) return;
     setState(() {});
 
-    await RewardPopup.show(context, Reward.generate(spot.id));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RewardDetailScreen(
+          reward: Reward.generate(spot.id, spotName: spot.name),
+        ),
+      ),
+    );
   }
   Future<void> _startCaptureFlow(Spot spot) async {
     Navigator.of(context).pop();
@@ -168,7 +175,13 @@ class _MapScreenState extends State<MapScreen> {
     if (!mounted) return;
     setState(() {});
 
-    await RewardPopup.show(context, Reward.generate(spot.id));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RewardDetailScreen(
+          reward: Reward.generate(spot.id, spotName: spot.name),
+        ),
+      ),
+    );
   }
 
   @override
