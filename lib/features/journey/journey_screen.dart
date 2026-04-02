@@ -63,11 +63,12 @@ class JourneyScreen extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: AppSpacing.lg,
                     mainAxisSpacing: AppSpacing.lg,
-                    childAspectRatio: 0.78,
+                    mainAxisExtent: 238,
                   ),
                   itemBuilder: (context, index) {
                     final item = captures[index];
-                    final dateText = DateFormat('dd MMM yyyy').format(item.capturedAt);
+                    final dateText =
+                    DateFormat('dd MMM yyyy').format(item.capturedAt);
 
                     return PolaroidTile(
                       image: FileImage(File(item.imagePath)),
@@ -190,7 +191,8 @@ class _ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progressValue = target == 0 ? 0.0 : (current / target).clamp(0.0, 1.0);
+    final progressValue =
+    target == 0 ? 0.0 : (current / target).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -231,7 +233,8 @@ class _ProgressCard extends StatelessWidget {
               value: progressValue,
               minHeight: 10,
               backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.brandGreen),
+              valueColor:
+              const AlwaysStoppedAnimation<Color>(AppColors.brandGreen),
             ),
           ),
           const SizedBox(height: 16),

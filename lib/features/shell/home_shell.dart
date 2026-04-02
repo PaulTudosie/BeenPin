@@ -44,11 +44,6 @@ class _HomeShellState extends State<HomeShell> {
                 const SnackBar(content: Text('Menu tapped')),
               );
             },
-            onAvatarTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Avatar tapped')),
-              );
-            },
           ),
           SubHeaderTabs(
             currentTab: _currentTab,

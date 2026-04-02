@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color brandBlue = Color(0xFF1E3A8A);
+  static const Color brandBlue = Color(0xFF2F55CC);
   static const Color brandGreen = Color(0xFF22C55E);
 
   // legacy aliases used in pins_screen

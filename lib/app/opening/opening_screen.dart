@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:been/features/shell/home_shell.dart';
+import 'package:been/core/theme/app_colors.dart';
 
 class BeenPinOpeningScreen extends StatefulWidget {
   const BeenPinOpeningScreen({super.key});
@@ -163,11 +164,11 @@ class _BeenPinOpeningScreenState extends State<BeenPinOpeningScreen>
                         children: [
                           TextSpan(
                             text: 'Been',
-                            style: TextStyle(color: Color(0xFF1565FF)),
+                            style: TextStyle(color: AppColors.brandBlue),
                           ),
                           TextSpan(
                             text: 'Pin',
-                            style: TextStyle(color: Color(0xFF22C55E)),
+                            style: TextStyle(color: AppColors.brandGreen),
                           ),
                         ],
                       ),

@@ -6,12 +6,10 @@ import 'package:been/core/theme/app_spacing.dart';
 
 class TopHeader extends StatelessWidget {
   final VoidCallback? onMenuTap;
-  final VoidCallback? onAvatarTap;
 
   const TopHeader({
     super.key,
     this.onMenuTap,
-    this.onAvatarTap,
   });
 
   @override
@@ -55,10 +53,6 @@ class TopHeader extends StatelessWidget {
                   icon: Icons.menu_rounded,
                   onTap: onMenuTap,
                 ),
-                const SizedBox(width: 12),
-                _AvatarAction(
-                  onTap: onAvatarTap,
-                ),
               ],
             ),
           ),
@@ -89,38 +83,6 @@ class _IconAction extends StatelessWidget {
           icon,
           color: AppColors.textPrimary,
           size: 29,
-        ),
-      ),
-    );
-  }
-}
-
-class _AvatarAction extends StatelessWidget {
-  final VoidCallback? onTap;
-
-  const _AvatarAction({this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: AppRadii.avatar,
-      onTap: onTap,
-      child: Ink(
-        width: 46,
-        height: 46,
-        decoration: const BoxDecoration(
-          color: AppColors.avatarBg,
-          borderRadius: BorderRadius.all(Radius.circular(16)),
-        ),
-        child: const Center(
-          child: Text(
-            'B',
-            style: TextStyle(
-              color: AppColors.brandBlue,
-              fontWeight: FontWeight.w800,
-              fontSize: 22,
-            ),
-          ),
         ),
       ),
     );
