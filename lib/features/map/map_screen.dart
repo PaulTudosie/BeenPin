@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
+import 'package:been/features/spot/spot_detail_screen.dart';
 import 'package:been/capture_screen.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/models/reward.dart';
@@ -105,10 +105,47 @@ class _MapScreenState extends State<MapScreen> {
         spot: spot,
         isCaptured: isCaptured,
         onTakePhoto: isCaptured ? null : () => _startCaptureFlow(spot),
+        onViewSpot: () => _openSpotDetail(spot, isCaptured),
       ),
     );
   }
+  Future<void> _openSpotDetail(Spot spot, bool isCaptured) async {
+    Navigator.of(context).pop();
 
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SpotDetailScreen(
+          spot: spot,
+          isCaptured: isCaptured,
+          onTakePhoto: isCaptured ? null : () => _startCaptureFlowFromDetail(spot),
+        ),
+      ),
+    );
+  }
+  Future<void> _startCaptureFlowFromDetail(Spot spot) async {
+    Navigator.of(context).pop();
+
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => CaptureScreen(spot: spot),
+      ),
+    );
+
+    if (result == null || result.isEmpty) return;
+
+    await CaptureStore.saveCapture(
+      spot: spot,
+      imagePath: result,
+    );
+
+    await _loadCapturedIds();
+    _rebuildMarkers();
+
+    if (!mounted) return;
+    setState(() {});
+
+    await RewardPopup.show(context, Reward.generate(spot.id));
+  }
   Future<void> _startCaptureFlow(Spot spot) async {
     Navigator.of(context).pop();
 
@@ -192,11 +229,13 @@ class _SpotSheet extends StatelessWidget {
   final Spot spot;
   final bool isCaptured;
   final VoidCallback? onTakePhoto;
+  final VoidCallback onViewSpot;
 
   const _SpotSheet({
     required this.spot,
     required this.isCaptured,
     required this.onTakePhoto,
+    required this.onViewSpot,
   });
 
   @override
@@ -223,7 +262,6 @@ class _SpotSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // drag handle
             Center(
               child: Container(
                 width: 44,
@@ -236,7 +274,6 @@ class _SpotSheet extends StatelessWidget {
               ),
             ),
 
-            // spot icon + name
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -280,14 +317,16 @@ class _SpotSheet extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 18),
 
-            // action button
             if (isCaptured)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEFFCF3),
                   borderRadius: BorderRadius.circular(14),
@@ -295,8 +334,10 @@ class _SpotSheet extends StatelessWidget {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.check_circle_rounded,
-                        color: AppColors.brandGreen),
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.brandGreen,
+                    ),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -311,20 +352,42 @@ class _SpotSheet extends StatelessWidget {
                 ),
               )
             else
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: onTakePhoto,
-                  icon: const Icon(Icons.camera_alt_rounded),
-                  label: const Text('Capture'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onTakePhoto,
+                      icon: const Icon(Icons.camera_alt_rounded),
+                      label: const Text('Capture'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onViewSpot,
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Text('View spot'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  foregroundColor: AppColors.textPrimary,
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),
