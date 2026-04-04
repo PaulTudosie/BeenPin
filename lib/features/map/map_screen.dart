@@ -7,7 +7,6 @@ import 'package:been/models/reward.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/services/spot_service.dart';
-import 'package:been/features/map/reward_popup.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:been/features/reward/reward_detail_screen.dart';
@@ -110,6 +109,7 @@ class _MapScreenState extends State<MapScreen> {
       ),
     );
   }
+
   Future<void> _openSpotDetail(Spot spot, bool isCaptured) async {
     Navigator.of(context).pop();
 
@@ -118,11 +118,13 @@ class _MapScreenState extends State<MapScreen> {
         builder: (_) => SpotDetailScreen(
           spot: spot,
           isCaptured: isCaptured,
-          onTakePhoto: isCaptured ? null : () => _startCaptureFlowFromDetail(spot),
+          onTakePhoto:
+          isCaptured ? null : () => _startCaptureFlowFromDetail(spot),
         ),
       ),
     );
   }
+
   Future<void> _startCaptureFlowFromDetail(Spot spot) async {
     Navigator.of(context).pop();
 
@@ -153,6 +155,7 @@ class _MapScreenState extends State<MapScreen> {
       ),
     );
   }
+
   Future<void> _startCaptureFlow(Spot spot) async {
     Navigator.of(context).pop();
 
@@ -212,8 +215,9 @@ class _MapScreenState extends State<MapScreen> {
           bottom: 20,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
+              color: AppColors.surface.withOpacity(0.96),
               borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.buttonSecondaryBorder),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
@@ -253,8 +257,6 @@ class _SpotSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
       padding: const EdgeInsets.all(20),
@@ -286,7 +288,6 @@ class _SpotSheet extends StatelessWidget {
                 ),
               ),
             ),
-
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -294,12 +295,12 @@ class _SpotSheet extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: scheme.primary.withOpacity(0.10),
+                    color: AppColors.tabActiveBg,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.place_rounded,
-                    color: scheme.primary,
+                    color: AppColors.brandBlue,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -330,9 +331,7 @@ class _SpotSheet extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 18),
-
             if (isCaptured)
               Container(
                 width: double.infinity,
@@ -341,9 +340,9 @@ class _SpotSheet extends StatelessWidget {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFFCF3),
+                  color: AppColors.successSoftBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                  border: Border.all(color: AppColors.successSoftBorder),
                 ),
                 child: const Row(
                   children: [
@@ -374,7 +373,10 @@ class _SpotSheet extends StatelessWidget {
                       icon: const Icon(Icons.camera_alt_rounded),
                       label: const Text('Capture'),
                       style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
+                        backgroundColor: AppColors.brandBlue,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        minimumSize: const Size.fromHeight(52),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -384,7 +386,6 @@ class _SpotSheet extends StatelessWidget {
                   const SizedBox(height: 10),
                 ],
               ),
-
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -392,9 +393,10 @@ class _SpotSheet extends StatelessWidget {
                 icon: const Icon(Icons.open_in_new_rounded),
                 label: const Text('View spot'),
                 style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
+                  minimumSize: const Size.fromHeight(52),
                   foregroundColor: AppColors.textPrimary,
-                  side: const BorderSide(color: AppColors.border),
+                  backgroundColor: AppColors.buttonSecondaryBg,
+                  side: const BorderSide(color: AppColors.buttonSecondaryBorder),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -417,14 +419,15 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: AppColors.chipBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.chipBorder),
       ),
       child: Text(
         label,
         style: const TextStyle(
           fontSize: 12,
+          fontWeight: FontWeight.w500,
           color: AppColors.textSecondary,
         ),
       ),

@@ -157,7 +157,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppColors.blue.withOpacity(0.12)
+                          ? AppColors.brandBlue.withOpacity(0.10)
                           : Colors.transparent,
                       shape: BoxShape.circle,
                     ),
@@ -172,7 +172,9 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: selected ? AppColors.blue : AppColors.textMuted,
+                      color: selected
+                          ? AppColors.brandBlue
+                          : AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -229,10 +231,10 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                     File(widget.record.imagePath),
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFFE2E8F0),
+                      color: AppColors.border,
                       child: const Icon(
                         Icons.image_not_supported_rounded,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textMuted,
                         size: 40,
                       ),
                     ),
@@ -267,6 +269,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
+                            letterSpacing: -0.1,
                             color: AppColors.textPrimary,
                           ),
                         ),
@@ -274,7 +277,8 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                       Text(
                         dateText,
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
                           color: AppColors.textMuted,
                         ),
                       ),
@@ -286,16 +290,18 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w800,
+                      letterSpacing: -0.1,
                       color: AppColors.textPrimary,
                     ),
                   ),
                   Text(
                     widget.record.spotType,
                     style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -311,8 +317,8 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                           ),
                           decoration: BoxDecoration(
                             color: _myReaction != null
-                                ? AppColors.blue.withOpacity(0.08)
-                                : AppColors.border.withOpacity(0.5),
+                                ? AppColors.brandBlue.withOpacity(0.08)
+                                : AppColors.surfaceSoft,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -329,7 +335,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.blue,
+                                    color: AppColors.brandBlue,
                                   ),
                                 ),
                               ],
@@ -346,8 +352,11 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.border.withOpacity(0.5),
+                            color: AppColors.surfaceSoft,
                             borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppColors.buttonSecondaryBorder,
+                            ),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -377,7 +386,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.amber.withOpacity(0.12),
+                            color: AppColors.amber.withOpacity(0.10),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
@@ -507,8 +516,9 @@ class _CommentsSheet extends StatelessWidget {
                 vertical: 10,
               ),
               decoration: BoxDecoration(
-                color: AppColors.border.withOpacity(0.4),
+                color: AppColors.surfaceSoft,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.border),
               ),
               child: const Text(
                 'Add a comment...',

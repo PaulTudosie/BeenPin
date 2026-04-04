@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- folded map -->
+  <path d="M6 46L14 22L28 18L38 24L50 19L58 22L64 46L50 42L38 48L28 41L14 46L6 46Z"
+        stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28 18V41"
+        stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M38 24V48"
+        stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- mask circle to remove overlap -->
+  <circle cx="46" cy="20" r="11" fill="white"/>
+
+  <!-- clean pin -->
+  <path d="M46 7C40.477 7 36 11.477 36 17C36 24.23 46 33 46 33C46 33 56 24.23 56 17C56 11.477 51.523 7 46 7Z"
+        stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="46" cy="17" r="4.8"
+          stroke="#2F55CC" stroke-width="2.6"/>
+</svg>

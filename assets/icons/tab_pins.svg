@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- camera -->
+  <path d="M8 23C8 19.686 10.686 17 14 17H18.5L21.2 13H28.8L31.5 17H36C39.314 17 42 19.686 42 23V39C42 42.314 39.314 45 36 45H14C10.686 45 8 42.314 8 39V23Z"
+        stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="25" cy="31" r="8"
+          stroke="#2F55CC" stroke-width="2.6"/>
+  <path d="M25 26.5C27.485 26.5 29.5 28.515 29.5 31"
+        stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="15.5" cy="23.5" r="1.6" fill="#2F55CC"/>
+
+  <!-- single clean pin -->
+  <path d="M44 20C39.582 20 36 23.582 36 28C36 33.784 44 40.8 44 40.8C44 40.8 52 33.784 52 28C52 23.582 48.418 20 44 20Z"
+        stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="44" cy="28" r="3.6"
+          stroke="#2F55CC" stroke-width="2.6"/>
+</svg>

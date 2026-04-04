@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
 
@@ -18,14 +19,14 @@ enum HomeTab {
     }
   }
 
-  IconData get icon {
+  String get assetPath {
     switch (this) {
       case HomeTab.map:
-        return Icons.map_outlined;
+        return 'assets/icons/tab_map.svg';
       case HomeTab.pins:
-        return Icons.view_stream_outlined;
+        return 'assets/icons/tab_pins.svg';
       case HomeTab.journey:
-        return Icons.person_outline_rounded;
+        return 'assets/icons/tab_journey.svg';
     }
   }
 }
@@ -43,7 +44,7 @@ class SubHeaderTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 62,
+      height: 64,
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
@@ -54,7 +55,7 @@ class SubHeaderTabs extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         child: Row(
           children: HomeTab.values
               .map(
@@ -90,36 +91,46 @@ class _TabItem extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                tab.icon,
-                size: 18,
-                color: color,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                tab.label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 16,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  letterSpacing: -0.2,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  tab.assetPath,
+                  width: 21,
+                  height: 21,
+                  colorFilter: ColorFilter.mode(
+                    color,
+                    BlendMode.srcIn,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Text(
+                  tab.label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 16,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    letterSpacing: -0.2,
+                    height: 1.0,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 11),
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
-            height: 2.5,
-            width: isActive ? 44 : 0,
+            height: 3,
+            width: isActive ? 48 : 0,
             decoration: BoxDecoration(
               color: AppColors.tabIndicator,
               borderRadius: BorderRadius.circular(99),

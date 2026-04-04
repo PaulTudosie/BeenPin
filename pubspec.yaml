@@ -36,6 +36,7 @@ dependencies:
   shared_preferences: ^2.2.3
   flutter:
     sdk: flutter
+  flutter_svg: ^2.0.10+1
   google_maps_flutter: ^2.7.0
   url_launcher: ^6.3.0
 
@@ -69,7 +70,9 @@ flutter:
     - assets/opening/photo_3.jpg
     - assets/opening/photo_4.jpg
     - assets/branding/beenpin_pin.png
-
+    - assets/icons/tab_map.svg
+    - assets/icons/tab_pins.svg
+    - assets/icons/tab_journey.svg
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
