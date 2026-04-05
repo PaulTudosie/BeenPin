@@ -42,6 +42,7 @@ class CaptureRecord {
 class CaptureStore {
   static const _capturedIdsKey = 'captured_spot_ids';
   static const _capturesKey = 'capture_records';
+  static const _avatarPathKey = 'journey_avatar_path';
 
   static Future<Set<String>> getCapturedIds() async {
     final prefs = await SharedPreferences.getInstance();
@@ -104,9 +105,25 @@ class CaptureStore {
     await prefs.setStringList(_capturedIdsKey, ids.toList());
   }
 
+  static Future<void> saveAvatarPath(String imagePath) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_avatarPathKey, imagePath);
+  }
+
+  static Future<String?> getAvatarPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_avatarPathKey);
+  }
+
+  static Future<void> clearAvatarPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_avatarPathKey);
+  }
+
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_capturedIdsKey);
     await prefs.remove(_capturesKey);
+    await prefs.remove(_avatarPathKey);
   }
 }

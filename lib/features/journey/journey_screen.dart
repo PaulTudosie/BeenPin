@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
@@ -9,13 +10,142 @@ import 'package:been/features/level/level_details_screen.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/widgets/polaroid_tile.dart';
 
-class JourneyScreen extends StatelessWidget {
+class JourneyScreen extends StatefulWidget {
   const JourneyScreen({super.key});
+
+  @override
+  State<JourneyScreen> createState() => _JourneyScreenState();
+}
+
+class _JourneyScreenState extends State<JourneyScreen> {
+  static const String _avatarPathKey = 'journey_avatar_path';
+
+  String? _avatarPath;
+  late Future<List<CaptureRecord>> _capturesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _capturesFuture = CaptureStore.getCaptures();
+    _loadAvatarPath();
+  }
+
+  Future<void> _loadAvatarPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPath = prefs.getString(_avatarPathKey);
+
+    if (!mounted) return;
+
+    setState(() {
+      _avatarPath = savedPath;
+    });
+  }
+
+  Future<void> _saveAvatarPath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_avatarPathKey, path);
+
+    if (!mounted) return;
+
+    setState(() {
+      _avatarPath = path;
+    });
+  }
+
+  Future<void> _showAvatarPicker(List<CaptureRecord> captures) async {
+    if (captures.isEmpty) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Choose avatar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Select one of your captured photos',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  height: 320,
+                  child: GridView.builder(
+                    itemCount: captures.length,
+                    gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: AppSpacing.md,
+                      mainAxisSpacing: AppSpacing.md,
+                      childAspectRatio: 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      final item = captures[index];
+
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () async {
+                          await _saveAvatarPath(item.imagePath);
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.file(
+                            File(item.imagePath),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: AppColors.surfaceSoft,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.image_not_supported_outlined,
+                                size: 28,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<CaptureRecord>>(
-      future: CaptureStore.getCaptures(),
+      future: _capturesFuture,
       builder: (context, snapshot) {
         final captures = snapshot.data ?? const <CaptureRecord>[];
 
@@ -40,14 +170,32 @@ class JourneyScreen extends StatelessWidget {
                 current: captures.length,
                 target: progress.target,
                 nextLevelName: progress.nextLevelName,
+                avatarPath: _avatarPath,
+                onAvatarTap: () => _showAvatarPicker(captures),
               ),
               const SizedBox(height: AppSpacing.xxl),
-              const Text(
-                'Your photos',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+              Text.rich(
+                const TextSpan(
+                  children: [
+                    TextSpan(
+                      text: "Places you've ",
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'Been',
+                      style: TextStyle(
+                        color: AppColors.brandBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -192,30 +340,75 @@ class _ProfileHeader extends StatelessWidget {
   final int current;
   final int target;
   final String nextLevelName;
+  final String? avatarPath;
+  final VoidCallback onAvatarTap;
 
   const _ProfileHeader({
     required this.levelName,
     required this.current,
     required this.target,
     required this.nextLevelName,
+    required this.avatarPath,
+    required this.onAvatarTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasAvatar =
+        avatarPath != null &&
+            avatarPath!.isNotEmpty &&
+            File(avatarPath!).existsSync();
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSoft,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(
-            Icons.person_outline_rounded,
-            size: 34,
-            color: AppColors.textSecondary,
+        GestureDetector(
+          onTap: onAvatarTap,
+          child: Stack(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceSoft,
+                  borderRadius: BorderRadius.circular(20),
+                  image: hasAvatar
+                      ? DecorationImage(
+                    image: FileImage(File(avatarPath!)),
+                    fit: BoxFit.cover,
+                  )
+                      : null,
+                ),
+                child: hasAvatar
+                    ? null
+                    : const Icon(
+                  Icons.person_outline_rounded,
+                  size: 34,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Positioned(
+                right: 4,
+                bottom: 4,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: AppColors.brandBlue,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
@@ -229,6 +422,7 @@ class _ProfileHeader extends StatelessWidget {
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
+                  letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: 4),
@@ -327,6 +521,7 @@ class _EmptyJourneyState extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
+              letterSpacing: -0.2,
             ),
           ),
           SizedBox(height: 8),
@@ -336,6 +531,7 @@ class _EmptyJourneyState extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
+              height: 1.35,
             ),
           ),
         ],

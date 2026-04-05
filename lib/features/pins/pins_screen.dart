@@ -48,13 +48,28 @@ class _PinsScreenState extends State<PinsScreen> {
                     AppSpacing.xl,
                     AppSpacing.sm,
                   ),
-                  child: Text(
-                    'Where others have been',
-                    style: TextStyle(
-                      fontSize: 13,
+                  child: Text.rich(
+                    const TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Where others have ',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Been',
+                          style: TextStyle(
+                            color: AppColors.brandBlue,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    style: const TextStyle(
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textMuted,
-                      letterSpacing: 0.4,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
