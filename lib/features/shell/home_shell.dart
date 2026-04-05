@@ -45,10 +45,6 @@ class _HomeShellState extends State<HomeShell> {
               );
             },
           ),
-          SubHeaderTabs(
-            currentTab: _currentTab,
-            onTabSelected: _onTabSelected,
-          ),
           Expanded(
             child: IndexedStack(
               index: _currentIndex,
@@ -60,6 +56,13 @@ class _HomeShellState extends State<HomeShell> {
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: SubHeaderTabs(
+          currentTab: _currentTab,
+          onTabSelected: _onTabSelected,
+        ),
       ),
     );
   }

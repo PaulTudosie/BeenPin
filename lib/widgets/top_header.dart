@@ -16,7 +16,7 @@ class TopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.brandBlue,
         boxShadow: AppShadows.header,
       ),
       child: SafeArea(
@@ -39,7 +39,7 @@ class TopHeader extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: 'Been',
-                        style: TextStyle(color: AppColors.brandBlue),
+                        style: TextStyle(color: Colors.white),
                       ),
                       TextSpan(
                         text: 'Pin',
@@ -81,7 +81,7 @@ class _IconAction extends StatelessWidget {
         height: 42,
         child: Icon(
           icon,
-          color: AppColors.textPrimary,
+          color: Colors.white,
           size: 29,
         ),
       ),
