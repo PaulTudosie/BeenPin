@@ -73,6 +73,8 @@ flutter:
     - assets/icons/tab_map.svg
     - assets/icons/tab_pins.svg
     - assets/icons/tab_journey.svg
+    - assets/icons/tab_hidden.svg
+    - assets/backgrounds/bg_minimal.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

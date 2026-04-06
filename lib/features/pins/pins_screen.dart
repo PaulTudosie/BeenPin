@@ -24,7 +24,7 @@ class _PinsScreenState extends State<PinsScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.bgPaper,
+      color: Colors.transparent,
       child: FutureBuilder<List<CaptureRecord>>(
         future: _capturesFuture,
         builder: (context, snapshot) {

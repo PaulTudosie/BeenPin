@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color brandBlue = Color(0xFF2F55CC);
+  static const Color brandBlue = Color(0xFF304FFE);
   static const Color brandGreen = Color(0xFF22C55E);
 
   // temporary legacy aliases

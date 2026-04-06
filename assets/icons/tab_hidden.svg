@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- lock shackle -->
+  <path d="M22 24V16C22 10.48 26.48 6 32 6C37.52 6 42 10.48 42 16V24" stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>
+
+  <!-- lock body -->
+  <rect x="16" y="24" width="32" height="28" rx="6" stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></rect>
+
+  <!-- location pin (centered, no overlap with borders) -->
+  <path d="M32 32C29.24 32 27 34.24 27 37C27 40.6 32 45 32 45C32 45 37 40.6 37 37C37 34.24 34.76 32 32 32Z" stroke="#2F55CC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>

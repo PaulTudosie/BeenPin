@@ -6,6 +6,7 @@ import 'package:been/core/theme/app_spacing.dart';
 enum HomeTab {
   map,
   pins,
+  hidden,
   journey;
 
   String get label {
@@ -14,6 +15,8 @@ enum HomeTab {
         return 'Map';
       case HomeTab.pins:
         return 'Pins';
+      case HomeTab.hidden:
+        return 'Hidden';
       case HomeTab.journey:
         return 'Journey';
     }
@@ -25,6 +28,8 @@ enum HomeTab {
         return 'assets/icons/tab_map.svg';
       case HomeTab.pins:
         return 'assets/icons/tab_pins.svg';
+      case HomeTab.hidden:
+        return 'assets/icons/tab_hidden.svg';
       case HomeTab.journey:
         return 'assets/icons/tab_journey.svg';
     }
@@ -44,30 +49,45 @@ class SubHeaderTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 64,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.border,
+          top: BorderSide(
+            color: Colors.black.withOpacity(0.04),
             width: 1,
           ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.10),
+            offset: const Offset(0, -4),
+            blurRadius: 16,
+            spreadRadius: 0,
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        child: Row(
-          children: HomeTab.values
-              .map(
-                (tab) => Expanded(
-              child: _TabItem(
-                tab: tab,
-                isActive: currentTab == tab,
-                onTap: () => onTabSelected(tab),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xs,
+            8,
+            AppSpacing.xs,
+            8,
+          ),
+          child: Row(
+            children: HomeTab.values
+                .map(
+                  (tab) => Expanded(
+                child: _TabItem(
+                  tab: tab,
+                  isActive: currentTab == tab,
+                  onTap: () => onTabSelected(tab),
+                ),
               ),
-            ),
-          )
-              .toList(),
+            )
+                .toList(),
+          ),
         ),
       ),
     );
@@ -87,57 +107,68 @@ class _TabItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.tabActive : AppColors.tabInactive;
+    final Color iconColor =
+    isActive ? AppColors.tabActive : AppColors.tabInactive;
+    final Color textColor =
+    isActive ? AppColors.tabActive : AppColors.tabInactive;
 
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          const Spacer(),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SvgPicture.asset(
-                  tab.assetPath,
-                  width: 21,
-                  height: 21,
-                  colorFilter: ColorFilter.mode(
-                    color,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  tab.label,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 16,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    letterSpacing: -0.2,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive
+                ? AppColors.brandBlue.withOpacity(0.06)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
           ),
-          const SizedBox(height: 11),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            height: 3,
-            width: isActive ? 48 : 0,
-            decoration: BoxDecoration(
-              color: AppColors.tabIndicator,
-              borderRadius: BorderRadius.circular(99),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                tab.assetPath,
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(
+                  iconColor,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                tab.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 11.5,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: -0.1,
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(height: 6),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                height: 3,
+                width: isActive ? 22 : 0,
+                decoration: BoxDecoration(
+                  color: AppColors.tabIndicator,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-        ],
+        ),
       ),
     );
   }

@@ -144,143 +144,149 @@ class _JourneyScreenState extends State<JourneyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<CaptureRecord>>(
-      future: _capturesFuture,
-      builder: (context, snapshot) {
-        final captures = snapshot.data ?? const <CaptureRecord>[];
+    return Container(
+      color: Colors.transparent,
+      child: FutureBuilder<List<CaptureRecord>>(
+        future: _capturesFuture,
+        builder: (context, snapshot) {
+          final captures = snapshot.data ?? const <CaptureRecord>[];
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        final progress = _buildProgress(captures.length);
+          final progress = _buildProgress(captures.length);
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            AppSpacing.xl,
-            AppSpacing.xl,
-            AppSpacing.xxxl,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _ProfileHeader(
-                levelName: progress.levelName,
-                current: captures.length,
-                target: progress.target,
-                nextLevelName: progress.nextLevelName,
-                avatarPath: _avatarPath,
-                onAvatarTap: () => _showAvatarPicker(captures),
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-              Text.rich(
-                const TextSpan(
-                  children: [
-                    TextSpan(
-                      text: "Places you've ",
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Been',
-                      style: TextStyle(
-                        color: AppColors.brandBlue,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.xl,
+              AppSpacing.xl,
+              AppSpacing.xxxl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ProfileHeader(
+                  levelName: progress.levelName,
+                  current: captures.length,
+                  target: progress.target,
+                  nextLevelName: progress.nextLevelName,
+                  avatarPath: _avatarPath,
+                  onAvatarTap: () => _showAvatarPicker(captures),
                 ),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              if (captures.isEmpty)
-                const _EmptyJourneyState()
-              else
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    const horizontalSpacing = AppSpacing.lg;
-                    const verticalSpacing = AppSpacing.lg;
-
-                    final availableWidth = constraints.maxWidth;
-
-                    final crossAxisCount = availableWidth >= 900
-                        ? 4
-                        : availableWidth >= 600
-                        ? 3
-                        : 2;
-
-                    final tileWidth =
-                        (availableWidth -
-                            (horizontalSpacing * (crossAxisCount - 1))) /
-                            crossAxisCount;
-
-                    final tileHeight = tileWidth + 92;
-
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: captures.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: horizontalSpacing,
-                        mainAxisSpacing: verticalSpacing,
-                        mainAxisExtent: tileHeight,
+                const SizedBox(height: AppSpacing.xxl),
+                Text.rich(
+                  const TextSpan(
+                    children: [
+                      TextSpan(
+                        text: "Places you've ",
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                        ),
                       ),
-                      itemBuilder: (context, index) {
-                        final item = captures[index];
-                        final dateText =
-                        DateFormat('dd MMM yyyy').format(item.capturedAt);
+                      TextSpan(
+                        text: 'Been',
+                        style: TextStyle(
+                          color: AppColors.brandBlue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                if (captures.isEmpty)
+                  const _EmptyJourneyState()
+                else
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      const horizontalSpacing = AppSpacing.lg;
+                      const verticalSpacing = AppSpacing.lg;
 
-                        return PolaroidTile(
-                          image: FileImage(File(item.imagePath)),
-                          spotName: item.spotName,
-                          cityCountry: 'Bucharest, Romania',
-                          dateText: dateText,
-                          onTap: () {
-                            showDialog<void>(
-                              context: context,
-                              builder: (_) => Dialog(
-                                insetPadding: const EdgeInsets.all(20),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(24),
-                                  child: AspectRatio(
-                                    aspectRatio: 3 / 4,
-                                    child: Image.file(
-                                      File(item.imagePath),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: AppColors.surfaceSoft,
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.image_not_supported_outlined,
-                                          size: 36,
-                                          color: AppColors.textSecondary,
-                                        ),
+                      final availableWidth = constraints.maxWidth;
+
+                      final crossAxisCount = availableWidth >= 900
+                          ? 4
+                          : availableWidth >= 600
+                          ? 3
+                          : 2;
+
+                      final tileWidth =
+                          (availableWidth -
+                              (horizontalSpacing * (crossAxisCount - 1))) /
+                              crossAxisCount;
+
+                      final tileHeight = tileWidth + 92;
+
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: captures.length,
+                        gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: horizontalSpacing,
+                          mainAxisSpacing: verticalSpacing,
+                          mainAxisExtent: tileHeight,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = captures[index];
+                          final dateText =
+                          DateFormat('dd MMM yyyy').format(item.capturedAt);
+
+                          return PolaroidTile(
+                            image: FileImage(File(item.imagePath)),
+                            spotName: item.spotName,
+                            cityCountry: 'Bucharest, Romania',
+                            dateText: dateText,
+                            onTap: () {
+                              showDialog<void>(
+                                context: context,
+                                builder: (_) => Dialog(
+                                  insetPadding: const EdgeInsets.all(20),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: AspectRatio(
+                                      aspectRatio: 3 / 4,
+                                      child: Image.file(
+                                        File(item.imagePath),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            Container(
+                                              color: AppColors.surfaceSoft,
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons
+                                                    .image_not_supported_outlined,
+                                                size: 36,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-            ],
-          ),
-        );
-      },
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
