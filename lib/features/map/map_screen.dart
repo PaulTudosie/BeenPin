@@ -1,15 +1,19 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:been/features/spot/spot_detail_screen.dart';
+
 import 'package:been/capture_screen.dart';
 import 'package:been/core/theme/app_colors.dart';
+import 'package:been/features/reward/reward_detail_screen.dart';
+import 'package:been/features/spot/spot_detail_screen.dart';
 import 'package:been/models/reward.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/services/spot_service.dart';
-import 'dart:ui' as ui;
-import 'package:flutter/services.dart';
-import 'package:been/features/reward/reward_detail_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -33,17 +37,29 @@ class _MapScreenState extends State<MapScreen> {
   Set<Marker> _markers = <Marker>{};
   bool _isReady = false;
 
+  LatLng? _userLatLng;
+  StreamSubscription<Position>? _positionStream;
+
   @override
   void initState() {
     super.initState();
     _bootstrap();
   }
 
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
   Future<void> _bootstrap() async {
     await Future.wait([
       _loadMarkerIcons(),
       _loadCapturedIds(),
+      _initUserLocation(),
     ]);
+
     _rebuildMarkers();
 
     if (!mounted) return;
@@ -74,6 +90,49 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _loadCapturedIds() async {
     _capturedIds = await CaptureStore.getCapturedIds();
+  }
+
+  Future<void> _initUserLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    var permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      return;
+    }
+
+    try {
+      final currentPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      _userLatLng = LatLng(
+        currentPosition.latitude,
+        currentPosition.longitude,
+      );
+
+      _positionStream?.cancel();
+      _positionStream = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      ).listen((position) {
+        if (!mounted) return;
+
+        setState(() {
+          _userLatLng = LatLng(position.latitude, position.longitude);
+        });
+      });
+    } catch (_) {
+      // Keep silent for MVP; map still works without live location.
+    }
   }
 
   void _rebuildMarkers() {
@@ -118,6 +177,7 @@ class _MapScreenState extends State<MapScreen> {
         builder: (_) => SpotDetailScreen(
           spot: spot,
           isCaptured: isCaptured,
+          userLatLng: _userLatLng,
           onTakePhoto:
           isCaptured ? null : () => _startCaptureFlowFromDetail(spot),
         ),
@@ -187,6 +247,20 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Future<void> _centerOnUserLocation() async {
+    final target = _userLatLng;
+    if (target == null) return;
+
+    await _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: target,
+          zoom: 16,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_isReady) {
@@ -201,12 +275,24 @@ class _MapScreenState extends State<MapScreen> {
           child: GoogleMap(
             initialCameraPosition: _initialPosition,
             markers: _markers,
+            myLocationEnabled: true,
             myLocationButtonEnabled: false,
             mapToolbarEnabled: false,
             zoomControlsEnabled: false,
             compassEnabled: true,
-            onMapCreated: (controller) {
+            onMapCreated: (controller) async {
               _mapController = controller;
+
+              if (_userLatLng != null) {
+                await controller.animateCamera(
+                  CameraUpdate.newCameraPosition(
+                    CameraPosition(
+                      target: _userLatLng!,
+                      zoom: 15.6,
+                    ),
+                  ),
+                );
+              }
             },
           ),
         ),
@@ -229,11 +315,7 @@ class _MapScreenState extends State<MapScreen> {
             child: IconButton(
               icon: const Icon(Icons.my_location_rounded),
               color: AppColors.textPrimary,
-              onPressed: () {
-                _mapController?.animateCamera(
-                  CameraUpdate.newCameraPosition(_initialPosition),
-                );
-              },
+              onPressed: _centerOnUserLocation,
             ),
           ),
         ),

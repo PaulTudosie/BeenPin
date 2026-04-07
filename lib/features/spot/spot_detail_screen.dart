@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/core/theme/app_colors.dart';
 
@@ -6,12 +9,14 @@ class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
   final bool isCaptured;
   final VoidCallback? onTakePhoto;
+  final LatLng? userLatLng;
 
   const SpotDetailScreen({
     super.key,
     required this.spot,
     required this.isCaptured,
     this.onTakePhoto,
+    this.userLatLng,
   });
 
   @override
@@ -20,6 +25,99 @@ class SpotDetailScreen extends StatefulWidget {
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   bool _isSaved = false;
+
+  Future<void> _goToSpot() async {
+    final spot = widget.spot;
+
+    final navigationUri = Uri.parse(
+      'google.navigation:q=${spot.lat},${spot.lng}',
+    );
+
+    final fallbackUri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1'
+          '&destination=${spot.lat},${spot.lng}'
+          '&travelmode=walking',
+    );
+
+    try {
+      if (await canLaunchUrl(navigationUri)) {
+        await launchUrl(
+          navigationUri,
+          mode: LaunchMode.externalApplication,
+        );
+        return;
+      }
+
+      if (await canLaunchUrl(fallbackUri)) {
+        await launchUrl(
+          fallbackUri,
+          mode: LaunchMode.externalApplication,
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open navigation for this spot.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open navigation for this spot.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  double? _distanceMeters() {
+    final user = widget.userLatLng;
+    if (user == null) return null;
+
+    return Geolocator.distanceBetween(
+      user.latitude,
+      user.longitude,
+      widget.spot.lat,
+      widget.spot.lng,
+    );
+  }
+
+  String? _distanceLabel() {
+    final meters = _distanceMeters();
+    if (meters == null) return null;
+
+    if (meters < 1000) {
+      return '${meters.round()} m away';
+    }
+
+    final km = meters / 1000;
+    return '${km.toStringAsFixed(km < 10 ? 1 : 0)} km away';
+  }
+
+  String? _walkTimeLabel() {
+    final meters = _distanceMeters();
+    if (meters == null) return null;
+
+    const walkingSpeedMetersPerMinute = 80.0;
+    final minutes = (meters / walkingSpeedMetersPerMinute).ceil().clamp(1, 999);
+
+    if (minutes < 60) {
+      return '$minutes min walk';
+    }
+
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+
+    if (remainingMinutes == 0) {
+      return '$hours h walk';
+    }
+
+    return '$hours h ${remainingMinutes} min walk';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +128,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final partnerName = _defaultPartnerForSpot(spot.name);
     final rewardTeaser = _defaultRewardTeaser(spot.name);
     final palette = _spotColors(spot.type);
+    final distanceLabel = _distanceLabel();
+    final walkTimeLabel = _walkTimeLabel();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
@@ -83,7 +183,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -96,11 +195,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         icon: _iconForType(spot.type),
                         label: category,
                       ),
+                      if (distanceLabel != null)
+                        _MetaChip(
+                          icon: Icons.near_me_rounded,
+                          label: distanceLabel,
+                          foregroundColor: const Color(0xFF1D4ED8),
+                          backgroundColor: const Color(0xFFEFF6FF),
+                        ),
                       _MetaChip(
                         icon: widget.isCaptured
                             ? Icons.check_circle_rounded
                             : Icons.explore_rounded,
-                        label: widget.isCaptured ? 'Captured' : 'Ready to explore',
+                        label: widget.isCaptured
+                            ? 'Captured'
+                            : 'Ready to explore',
                         foregroundColor: widget.isCaptured
                             ? const Color(0xFF0F766E)
                             : const Color(0xFF1D4ED8),
@@ -110,9 +218,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
-
                   Text(
                     description,
                     style: const TextStyle(
@@ -121,20 +227,22 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-
+                  if (distanceLabel != null || walkTimeLabel != null) ...[
+                    const SizedBox(height: 18),
+                    _RouteInfoCard(
+                      distanceLabel: distanceLabel,
+                      walkTimeLabel: walkTimeLabel,
+                    ),
+                  ],
                   const SizedBox(height: 20),
-
                   _RewardCard(
                     partnerName: partnerName,
                     rewardTeaser: rewardTeaser,
                     isCaptured: widget.isCaptured,
                   ),
-
                   const SizedBox(height: 28),
-
                   const _SectionTitle(title: 'Why this spot works'),
                   const SizedBox(height: 12),
-
                   const _BenefitRow(
                     title: 'Strong photo moment',
                     subtitle:
@@ -152,9 +260,28 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     subtitle:
                     'Tap pin, go there, capture, unlock, redeem. Easy to explain to partners.',
                   ),
-
                   const SizedBox(height: 28),
-
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _goToSpot,
+                      icon: const Icon(Icons.navigation_rounded),
+                      label: Text(
+                        walkTimeLabel != null
+                            ? 'Go to spot • $walkTimeLabel'
+                            : 'Go to spot',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.brandBlue,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
@@ -164,7 +291,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ? Icons.check_circle_rounded
                             : Icons.camera_alt_rounded,
                       ),
-                      label: Text(widget.isCaptured ? 'Already captured' : 'Take photo'),
+                      label: Text(
+                        widget.isCaptured ? 'Already captured' : 'Take photo',
+                      ),
                       style: FilledButton.styleFrom(
                         backgroundColor: widget.isCaptured
                             ? const Color(0xFF94A3B8)
@@ -177,9 +306,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -216,9 +343,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -252,6 +377,89 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RouteInfoCard extends StatelessWidget {
+  final String? distanceLabel;
+  final String? walkTimeLabel;
+
+  const _RouteInfoCard({
+    required this.distanceLabel,
+    required this.walkTimeLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.navigation_rounded,
+              color: AppColors.brandBlue,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'From your location',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.brandBlue,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  distanceLabel ?? 'Distance unavailable',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (walkTimeLabel != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    walkTimeLabel!,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      height: 1.45,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

@@ -109,11 +109,14 @@ class _DecoratedBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // Base
         Positioned.fill(
           child: Container(
             color: AppColors.background,
           ),
         ),
+
+        // Very light gradient (kept minimal)
         Positioned.fill(
           child: Container(
             decoration: const BoxDecoration(
@@ -121,22 +124,33 @@ class _DecoratedBackground extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFFFDFEFF),
-                  Color(0xFFF8FAFC),
+                  Color(0xFFFFFFFF),
+                  Color(0xFFF7FAFE),
                 ],
               ),
             ),
           ),
         ),
+
+        // 🔵 Stronger pattern (MAIN CHANGE)
         Positioned.fill(
           child: Opacity(
-            opacity: 0.055,
+            opacity: 0.22, // was ~0.10–0.11 → now clearly visible
             child: Image.asset(
               'assets/backgrounds/bg_minimal.png',
               fit: BoxFit.cover,
             ),
           ),
         ),
+
+        // ⚪ Reduced veil (SECOND CHANGE)
+        Positioned.fill(
+          child: Container(
+            color: Colors.white.withOpacity(0.07), // was ~0.14 → now lighter
+          ),
+        ),
+
+        // Grain (kept very subtle)
         const Positioned.fill(
           child: IgnorePointer(
             child: CustomPaint(
@@ -144,6 +158,7 @@ class _DecoratedBackground extends StatelessWidget {
             ),
           ),
         ),
+
         Positioned.fill(child: child),
       ],
     );
@@ -156,36 +171,36 @@ class _NoiseGrainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final darkPaint = Paint()
-      ..color = const Color(0xFF000000).withOpacity(0.020)
+      ..color = const Color(0xFF000000).withOpacity(0.012)
       ..style = PaintingStyle.fill;
 
     final lightPaint = Paint()
-      ..color = const Color(0xFFFFFFFF).withOpacity(0.012)
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.008)
       ..style = PaintingStyle.fill;
 
-    const double step = 14;
+    const double step = 16;
 
     for (double y = 0; y < size.height; y += step) {
       for (double x = 0; x < size.width; x += step) {
         final v1 = _hash(x, y);
         final v2 = _hash(x + 3.17, y + 7.91);
 
-        if (v1 > 0.72) {
+        if (v1 > 0.76) {
           final dx = x + (v1 * 6);
           final dy = y + (v2 * 6);
           canvas.drawCircle(
             Offset(dx, dy),
-            0.55 + (v1 * 0.35),
+            0.5 + (v1 * 0.25),
             darkPaint,
           );
         }
 
-        if (v2 > 0.80) {
+        if (v2 > 0.84) {
           final dx = x + (v2 * 5);
           final dy = y + (v1 * 5);
           canvas.drawCircle(
             Offset(dx, dy),
-            0.4 + (v2 * 0.25),
+            0.35 + (v2 * 0.2),
             lightPaint,
           );
         }

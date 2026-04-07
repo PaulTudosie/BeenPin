@@ -14,35 +14,35 @@ class TopHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    final headerHeight = isLandscape ? 56.0 : 62.0;
+    final logoFontSize = isLandscape ? 22.0 : 24.0;
+    final menuSize = isLandscape ? 26.0 : 28.0;
+    final horizontalPadding = isLandscape ? AppSpacing.lg : AppSpacing.xl;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            offset: const Offset(0, 3),
-            blurRadius: 8,
-          ),
-        ],
+        color: AppColors.surface,
+        boxShadow: AppShadows.header,
       ),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 76,
+          height: headerHeight,
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xl,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
             child: Row(
               children: [
                 RichText(
-                  text: const TextSpan(
+                  text: TextSpan(
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: logoFontSize,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.6,
+                      letterSpacing: -0.5,
                     ),
-                    children: [
+                    children: const [
                       TextSpan(
                         text: 'Been',
                         style: TextStyle(color: AppColors.brandBlue),
@@ -57,6 +57,7 @@ class TopHeader extends StatelessWidget {
                 const Spacer(),
                 _IconAction(
                   icon: Icons.menu_rounded,
+                  iconSize: menuSize,
                   onTap: onMenuTap,
                 ),
               ],
@@ -70,10 +71,12 @@ class TopHeader extends StatelessWidget {
 
 class _IconAction extends StatelessWidget {
   final IconData icon;
+  final double iconSize;
   final VoidCallback? onTap;
 
   const _IconAction({
     required this.icon,
+    required this.iconSize,
     this.onTap,
   });
 
@@ -83,12 +86,12 @@ class _IconAction extends StatelessWidget {
       borderRadius: AppRadii.pill,
       onTap: onTap,
       child: SizedBox(
-        width: 42,
-        height: 42,
+        width: 36,
+        height: 36,
         child: Icon(
           icon,
-          color:AppColors.brandBlue,
-          size: 29,
+          color: AppColors.textPrimary,
+          size: iconSize,
         ),
       ),
     );

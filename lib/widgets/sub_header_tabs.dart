@@ -48,46 +48,38 @@ class SubHeaderTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    final barHeight = isLandscape ? 58.0 : 74.0;
+    final horizontalPadding = isLandscape ? AppSpacing.md : AppSpacing.sm;
+
     return Container(
-      decoration: BoxDecoration(
+      height: barHeight,
+      decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
           top: BorderSide(
-            color: Colors.black.withOpacity(0.04),
+            color: AppColors.border,
             width: 1,
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.10),
-            offset: const Offset(0, -4),
-            blurRadius: 16,
-            spreadRadius: 0,
-          ),
-        ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xs,
-            8,
-            AppSpacing.xs,
-            8,
-          ),
-          child: Row(
-            children: HomeTab.values
-                .map(
-                  (tab) => Expanded(
-                child: _TabItem(
-                  tab: tab,
-                  isActive: currentTab == tab,
-                  onTap: () => onTabSelected(tab),
-                ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: Row(
+          children: HomeTab.values
+              .map(
+                (tab) => Expanded(
+              child: _TabItem(
+                tab: tab,
+                isActive: currentTab == tab,
+                isLandscape: isLandscape,
+                onTap: () => onTabSelected(tab),
               ),
-            )
-                .toList(),
-          ),
+            ),
+          )
+              .toList(),
         ),
       ),
     );
@@ -97,78 +89,97 @@ class SubHeaderTabs extends StatelessWidget {
 class _TabItem extends StatelessWidget {
   final HomeTab tab;
   final bool isActive;
+  final bool isLandscape;
   final VoidCallback onTap;
 
   const _TabItem({
     required this.tab,
     required this.isActive,
+    required this.isLandscape,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color iconColor =
-    isActive ? AppColors.tabActive : AppColors.tabInactive;
-    final Color textColor =
-    isActive ? AppColors.tabActive : AppColors.tabInactive;
+    final color = isActive ? AppColors.tabActive : AppColors.tabInactive;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isActive
-                ? AppColors.brandBlue.withOpacity(0.06)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
+    final iconSize = isLandscape ? 18.0 : 18.0;
+    final labelSize = isLandscape ? 12.5 : 12.5;
+    final underlineWidth = isLandscape ? 28.0 : 32.0;
+    final underlineHeight = 3.0;
+
+    return InkWell(
+      onTap: onTap,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isLandscape) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  tab.assetPath,
+                  width: iconSize,
+                  height: iconSize,
+                  colorFilter: ColorFilter.mode(
+                    color,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    tab.label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: labelSize,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                      letterSpacing: -0.1,
+                      height: 1.0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ] else ...[
+            SvgPicture.asset(
+              tab.assetPath,
+              width: iconSize,
+              height: iconSize,
+              colorFilter: ColorFilter.mode(
+                color,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              tab.label,
+              style: TextStyle(
+                color: color,
+                fontSize: labelSize,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: -0.1,
+                height: 1.0,
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            height: underlineHeight,
+            width: isActive ? underlineWidth : 0,
+            decoration: BoxDecoration(
+              color: AppColors.tabIndicator,
+              borderRadius: BorderRadius.circular(99),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                tab.assetPath,
-                width: 22,
-                height: 22,
-                colorFilter: ColorFilter.mode(
-                  iconColor,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                tab.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 11.5,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  letterSpacing: -0.1,
-                  height: 1.0,
-                ),
-              ),
-              const SizedBox(height: 6),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                height: 3,
-                width: isActive ? 22 : 0,
-                decoration: BoxDecoration(
-                  color: AppColors.tabIndicator,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
