@@ -1,16 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:been/models/reward.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/features/map/reward_popup.dart';
+import 'package:been/services/reward_redemption_store.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class RewardDetailScreen extends StatelessWidget {
+class RewardDetailScreen extends StatefulWidget {
   final Reward reward;
 
   const RewardDetailScreen({
     super.key,
     required this.reward,
   });
+
+  @override
+  State<RewardDetailScreen> createState() => _RewardDetailScreenState();
+}
+
+class _RewardDetailScreenState extends State<RewardDetailScreen> {
+  late Future<RewardRedemption?> _redemptionFuture;
+
+  Reward get reward => widget.reward;
+
+  @override
+  void initState() {
+    super.initState();
+    _redemptionFuture = _loadRedemption();
+  }
+
+  Future<RewardRedemption?> _loadRedemption() {
+    final proofId = reward.proofId;
+    if (proofId == null) return Future.value();
+    return RewardRedemptionStore.getRedemption(proofId);
+  }
 
   Future<void> _openPartnerUrl() async {
     final uri = Uri.parse(reward.partnerUrl);
@@ -32,151 +55,299 @@ class RewardDetailScreen extends StatelessWidget {
     await RewardPopup.show(context, reward);
   }
 
+  Future<void> _markRedeemed() async {
+    final proofId = reward.proofId;
+    if (proofId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text('Mark reward as redeemed?'),
+          content: Text(
+            'This simulates the partner staff scanner for the pilot. Proof ID $proofId will become one-use on this demo device.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Mark redeemed'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    await RewardRedemptionStore.redeem(proofId);
+    if (!mounted) return;
+
+    setState(() {
+      _redemptionFuture = _loadRedemption();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final proofId = reward.proofId;
+    final capturedAt = reward.capturedAt;
+    final distanceMeters = reward.distanceMeters;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: const Color(0xFFF7F8FA),
-        foregroundColor: AppColors.textPrimary,
-        title: const Text(
-          'Reward unlocked',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+    return FutureBuilder<RewardRedemption?>(
+      future: _redemptionFuture,
+      builder: (context, snapshot) {
+        final redemption = snapshot.data;
+        final isRedeemed = redemption != null;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF7F8FA),
+          appBar: AppBar(
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            backgroundColor: const Color(0xFFF7F8FA),
+            foregroundColor: AppColors.textPrimary,
+            title: const Text(
+              'Reward unlocked',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ),
-        ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _PartnerHeader(
-                partnerName: reward.partnerName,
-                partnerCategory: reward.partnerCategory,
-              ),
-
-              const SizedBox(height: 20),
-
-              _HeroOfferCard(reward: reward),
-
-              const SizedBox(height: 20),
-
-              _ActionCard(
-                icon: Icons.place_rounded,
-                title: reward.partnerAddress,
-                subtitle: 'Redeem in person at the partner location.',
-                onTap: _openMaps,
-                buttonLabel: 'Open location',
-              ),
-
-              const SizedBox(height: 14),
-
-              _ActionCard(
-                icon: Icons.public_rounded,
-                title: reward.partnerName,
-                subtitle: 'Open the partner page in your browser.',
-                onTap: _openPartnerUrl,
-                buttonLabel: 'Open partner',
-              ),
-
-              const SizedBox(height: 24),
-
-              const _SectionTitle(title: 'How redemption works'),
-              const SizedBox(height: 12),
-
-              _StepRow(
-                number: '1',
-                title: 'Visit the partner',
-                subtitle: 'Go to the location shown above.',
-              ),
-              const SizedBox(height: 12),
-              _StepRow(
-                number: '2',
-                title: 'Order normally',
-                subtitle: 'The reward is an extra, not a standalone free claim.',
-              ),
-              const SizedBox(height: 12),
-              _StepRow(
-                number: '3',
-                title: 'Show the QR code',
-                subtitle: 'Present it to the staff when requested.',
-              ),
-
-              const SizedBox(height: 24),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Reward details',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _InfoLine(
-                      label: 'Offer',
-                      value: reward.gift,
-                    ),
-                    const SizedBox(height: 10),
-                    _InfoLine(
-                      label: 'Category',
-                      value: reward.partnerCategory,
-                    ),
-                    const SizedBox(height: 10),
-                    _InfoLine(
-                      label: 'Unlocked from',
-                      value: reward.unlockedFromSpot,
-                    ),
-                    const SizedBox(height: 10),
-                    _InfoLine(
-                      label: 'Valid',
-                      value: 'Today · ${reward.expiryDate}',
-                    ),
+          body: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _PartnerHeader(
+                    partnerName: reward.partnerName,
+                    partnerCategory: reward.partnerCategory,
+                  ),
+                  const SizedBox(height: 20),
+                  if (isRedeemed) ...[
+                    _RedeemedStatusCard(redemption: redemption),
+                    const SizedBox(height: 16),
                   ],
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => _showQr(context),
-                  icon: const Icon(Icons.qr_code_rounded),
-                  label: const Text('Reveal QR'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.brandGreen,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                  _HeroOfferCard(reward: reward),
+                  const SizedBox(height: 20),
+                  _ActionCard(
+                    icon: Icons.place_rounded,
+                    title: reward.partnerAddress,
+                    subtitle: 'Redeem in person at the partner location.',
+                    onTap: _openMaps,
+                    buttonLabel: 'Open location',
+                  ),
+                  const SizedBox(height: 14),
+                  _ActionCard(
+                    icon: Icons.public_rounded,
+                    title: reward.partnerName,
+                    subtitle: 'Open the partner page in your browser.',
+                    onTap: _openPartnerUrl,
+                    buttonLabel: 'Open partner',
+                  ),
+                  const SizedBox(height: 24),
+                  const _SectionTitle(title: 'How redemption works'),
+                  const SizedBox(height: 12),
+                  _StepRow(
+                    number: '1',
+                    title: 'Visit the partner',
+                    subtitle: 'Go to the location shown above.',
+                  ),
+                  const SizedBox(height: 12),
+                  _StepRow(
+                    number: '2',
+                    title: 'Order normally',
+                    subtitle:
+                        'The reward is an extra, not a standalone free claim.',
+                  ),
+                  const SizedBox(height: 12),
+                  _StepRow(
+                    number: '3',
+                    title: 'Show the QR code',
+                    subtitle: 'Present it to the staff when requested.',
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Reward details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _InfoLine(
+                          label: 'Offer',
+                          value: reward.gift,
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoLine(
+                          label: 'Category',
+                          value: reward.partnerCategory,
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoLine(
+                          label: 'Unlocked from',
+                          value: reward.unlockedFromSpot,
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoLine(
+                          label: 'Valid',
+                          value: 'Today - ${reward.expiryDate}',
+                        ),
+                        if (proofId != null) ...[
+                          const SizedBox(height: 10),
+                          _InfoLine(
+                            label: 'Proof ID',
+                            value: proofId,
+                          ),
+                        ],
+                        if (capturedAt != null) ...[
+                          const SizedBox(height: 10),
+                          _InfoLine(
+                            label: 'Captured at',
+                            value: DateFormat('dd MMM yyyy, HH:mm').format(
+                              capturedAt,
+                            ),
+                          ),
+                        ],
+                        if (distanceMeters != null) ...[
+                          const SizedBox(height: 10),
+                          _InfoLine(
+                            label: 'GPS proof',
+                            value:
+                                '${distanceMeters.round()}m from the pin when captured',
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        _InfoLine(
+                          label: 'Purchase condition',
+                          value: reward.purchaseCondition,
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoLine(
+                          label: 'Staff instruction',
+                          value: reward.staffInstruction,
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoLine(
+                          label: 'Daily demo limit',
+                          value: '${reward.dailyLimit} redemptions',
+                        ),
+                        const SizedBox(height: 10),
+                        const _InfoLine(
+                          label: 'Redemption rule',
+                          value: 'Same day, one use, extra with a purchase',
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: isRedeemed ? null : () => _showQr(context),
+                      icon: Icon(
+                        isRedeemed
+                            ? Icons.check_circle_rounded
+                            : Icons.qr_code_rounded,
+                      ),
+                      label:
+                          Text(isRedeemed ? 'Already redeemed' : 'Reveal QR'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: isRedeemed
+                            ? AppColors.textMuted
+                            : AppColors.brandGreen,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: isRedeemed ? null : _markRedeemed,
+                      icon: const Icon(Icons.verified_rounded),
+                      label: const Text('Partner demo: mark redeemed'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        );
+      },
+    );
+  }
+}
+
+class _RedeemedStatusCard extends StatelessWidget {
+  final RewardRedemption redemption;
+
+  const _RedeemedStatusCard({required this.redemption});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFFCF3),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.successSoftBorder),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.check_circle_rounded,
+            color: AppColors.brandGreen,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Redeemed at ${DateFormat('dd MMM yyyy, HH:mm').format(redemption.redeemedAt)}. This proof ID is now one-use on this demo device.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -271,7 +442,7 @@ class _HeroOfferCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
@@ -283,9 +454,9 @@ class _HeroOfferCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.16),
+              color: Colors.white.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withOpacity(0.18)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
             child: const Text(
               'YOUR EXTRA TODAY',
@@ -352,9 +523,9 @@ class _OfferChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.14),
+        color: Colors.white.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withOpacity(0.18)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -532,10 +703,10 @@ class _InfoLine extends StatelessWidget {
     return RichText(
       text: TextSpan(
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: AppColors.textPrimary,
-          fontSize: 14.5,
-          height: 1.45,
-        ),
+              color: AppColors.textPrimary,
+              fontSize: 14.5,
+              height: 1.45,
+            ),
         children: [
           TextSpan(
             text: '$label: ',

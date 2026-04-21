@@ -1,11 +1,14 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/features/hidden/hidden_spots_screen.dart';
 import 'package:been/features/journey/journey_screen.dart';
 import 'package:been/features/map/map_screen.dart';
 import 'package:been/features/pins/pins_screen.dart';
+import 'package:been/features/notifications/notifications_screen.dart';
+import 'package:been/models/hidden_spot.dart';
+import 'package:been/services/hidden_capture_store.dart';
+import 'package:been/services/hidden_spot_service.dart';
+import 'package:been/widgets/app_background.dart';
 import 'package:been/widgets/sub_header_tabs.dart';
 import 'package:been/widgets/top_header.dart';
 
@@ -18,71 +21,242 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   HomeTab _currentTab = HomeTab.map;
+  final Map<HomeTab, int> _tabRefreshTick = {
+    for (final tab in HomeTab.values) tab: 0,
+  };
 
-  void _onTabSelected(HomeTab tab) {
-    if (_currentTab == tab) return;
-    setState(() => _currentTab = tab);
+  void _markTabStale(HomeTab tab) {
+    _tabRefreshTick[tab] = (_tabRefreshTick[tab] ?? 0) + 1;
   }
 
-  int get _currentIndex {
-    switch (_currentTab) {
-      case HomeTab.map:
-        return 0;
-      case HomeTab.pins:
-        return 1;
-      case HomeTab.hidden:
-        return 2;
-      case HomeTab.journey:
-        return 3;
+  void _onTabSelected(HomeTab tab) {
+    if (_currentTab == tab) {
+      if (tab == HomeTab.map) return;
+
+      setState(() {
+        _markTabStale(tab);
+      });
+      return;
     }
+
+    setState(() {
+      _currentTab = tab;
+
+      if (tab != HomeTab.map) {
+        _markTabStale(tab);
+      }
+    });
+  }
+
+  int get _currentIndex => HomeTab.values.indexOf(_currentTab);
+
+  void _showMainMenu() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _MenuRow(
+                  icon: Icons.person_outline_rounded,
+                  title: 'Account',
+                  subtitle: 'Profile, follows, rewards, and settings',
+                  onTap: () => _openMenuDialog(
+                    context,
+                    title: 'Account',
+                    body:
+                        'Account controls will include profile editing, follow history, rewards, and sign-in options.',
+                  ),
+                ),
+                _MenuRow(
+                  icon: Icons.mail_outline_rounded,
+                  title: 'Contact',
+                  subtitle: 'Partner, support, and feedback contact',
+                  onTap: () => _openMenuDialog(
+                    context,
+                    title: 'Contact',
+                    body:
+                        'For the pilot demo, this can point partners and early users to contact@beenpin.app.',
+                  ),
+                ),
+                _MenuRow(
+                  icon: Icons.info_outline_rounded,
+                  title: 'About BeenPin',
+                  subtitle: 'What the app does and why it exists',
+                  onTap: () => _openMenuDialog(
+                    context,
+                    title: 'About BeenPin',
+                    body:
+                        'BeenPin is an exploration photo game for discovering city pins, proving visits, and unlocking same-day local rewards.',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openMenuDialog(
+    BuildContext sheetContext, {
+    required String title,
+    required String body,
+  }) {
+    Navigator.of(sheetContext).pop();
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: Text(title),
+          content: Text(body),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showHiddenScanDemo() async {
+    final hiddenSpot = await showModalBottomSheet<HiddenSpot>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Demo hidden QR scan',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Use this before physical QR stickers are printed. It simulates scanning a hidden street code.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                ),
+                const SizedBox(height: 14),
+                ...HiddenSpotService.spots.map((spot) {
+                  return _HiddenScanRow(
+                    spot: spot,
+                    onTap: () => Navigator.of(context).pop(spot),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (hiddenSpot == null) return;
+
+    await HiddenCaptureStore.saveCapture(
+      HiddenCaptureRecord(
+        spotId: hiddenSpot.id,
+        spotName: hiddenSpot.name,
+        imagePath: '',
+        discoveredAt: DateTime.now(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.surfaceElevated,
+        content: Text(
+          '${hiddenSpot.name} unlocked: ${hiddenSpot.rewardTitle}',
+          style: const TextStyle(color: AppColors.textPrimary),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildScreens() {
+    return [
+      KeyedSubtree(
+        key: ValueKey('pins-${_tabRefreshTick[HomeTab.pins]}'),
+        child: const AppBackground(
+          child: PinsScreen(),
+        ),
+      ),
+      KeyedSubtree(
+        key: ValueKey('hidden-${_tabRefreshTick[HomeTab.hidden]}'),
+        child: AppBackground(
+          child: HiddenSpotsScreen(
+            onScanTap: _showHiddenScanDemo,
+          ),
+        ),
+      ),
+      const MapScreen(),
+      KeyedSubtree(
+        key:
+            ValueKey('notifications-${_tabRefreshTick[HomeTab.notifications]}'),
+        child: const AppBackground(
+          child: NotificationsScreen(),
+        ),
+      ),
+      KeyedSubtree(
+        key: ValueKey('journey-${_tabRefreshTick[HomeTab.journey]}'),
+        child: const AppBackground(
+          child: JourneyScreen(),
+        ),
+      ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    final screens = _buildScreens();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           TopHeader(
-            onMenuTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: AppColors.surfaceElevated,
-                  content: Text(
-                    'Menu tapped',
-                    style: TextStyle(color: AppColors.textPrimary),
-                  ),
-                ),
-              );
-            },
+            onMenuTap: _showMainMenu,
           ),
           Expanded(
             child: IndexedStack(
               index: _currentIndex,
-              children: [
-                const MapScreen(),
-                const _DecoratedBackground(
-                  child: PinsScreen(),
-                ),
-                _DecoratedBackground(
-                  child: HiddenSpotsScreen(
-                    onScanTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: AppColors.surfaceElevated,
-                          content: Text(
-                            'Hidden QR scan flow will be added next',
-                            style: TextStyle(color: AppColors.textPrimary),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const _DecoratedBackground(
-                  child: JourneyScreen(),
-                ),
-              ],
+              children: screens,
             ),
           ),
         ],
@@ -98,121 +272,100 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-class _DecoratedBackground extends StatelessWidget {
-  final Widget child;
+class _HiddenScanRow extends StatelessWidget {
+  final HiddenSpot spot;
+  final VoidCallback onTap;
 
-  const _DecoratedBackground({
-    required this.child,
+  const _HiddenScanRow({
+    required this.spot,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Base
-        Positioned.fill(
-          child: Container(
-            color: AppColors.background,
-          ),
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: AppColors.tabActiveBg,
+          borderRadius: BorderRadius.circular(14),
         ),
-
-        // Very light gradient (kept minimal)
-        Positioned.fill(
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFFFFFF),
-                  Color(0xFFF7FAFE),
-                ],
-              ),
+        child: const Icon(
+          Icons.qr_code_2_rounded,
+          color: AppColors.brandBlue,
+        ),
+      ),
+      title: Text(
+        spot.name,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
             ),
-          ),
-        ),
-
-        // 🔵 Stronger pattern (MAIN CHANGE)
-        Positioned.fill(
-          child: Opacity(
-            opacity: 0.22, // was ~0.10–0.11 → now clearly visible
-            child: Image.asset(
-              'assets/backgrounds/bg_minimal.png',
-              fit: BoxFit.cover,
+      ),
+      subtitle: Text(
+        spot.clue,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
             ),
-          ),
-        ),
-
-        // ⚪ Reduced veil (SECOND CHANGE)
-        Positioned.fill(
-          child: Container(
-            color: Colors.white.withOpacity(0.07), // was ~0.14 → now lighter
-          ),
-        ),
-
-        // Grain (kept very subtle)
-        const Positioned.fill(
-          child: IgnorePointer(
-            child: CustomPaint(
-              painter: _NoiseGrainPainter(),
-            ),
-          ),
-        ),
-
-        Positioned.fill(child: child),
-      ],
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: AppColors.textMuted,
+      ),
+      onTap: onTap,
     );
   }
 }
 
-class _NoiseGrainPainter extends CustomPainter {
-  const _NoiseGrainPainter();
+class _MenuRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _MenuRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final darkPaint = Paint()
-      ..color = const Color(0xFF000000).withOpacity(0.012)
-      ..style = PaintingStyle.fill;
-
-    final lightPaint = Paint()
-      ..color = const Color(0xFFFFFFFF).withOpacity(0.008)
-      ..style = PaintingStyle.fill;
-
-    const double step = 16;
-
-    for (double y = 0; y < size.height; y += step) {
-      for (double x = 0; x < size.width; x += step) {
-        final v1 = _hash(x, y);
-        final v2 = _hash(x + 3.17, y + 7.91);
-
-        if (v1 > 0.76) {
-          final dx = x + (v1 * 6);
-          final dy = y + (v2 * 6);
-          canvas.drawCircle(
-            Offset(dx, dy),
-            0.5 + (v1 * 0.25),
-            darkPaint,
-          );
-        }
-
-        if (v2 > 0.84) {
-          final dx = x + (v2 * 5);
-          final dy = y + (v1 * 5);
-          canvas.drawCircle(
-            Offset(dx, dy),
-            0.35 + (v2 * 0.2),
-            lightPaint,
-          );
-        }
-      }
-    }
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: AppColors.tabActiveBg,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Icon(
+          icon,
+          color: AppColors.brandBlue,
+        ),
+      ),
+      title: Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: AppColors.textMuted,
+      ),
+      onTap: onTap,
+    );
   }
-
-  double _hash(double x, double y) {
-    final v = math.sin((x * 12.9898) + (y * 78.233)) * 43758.5453;
-    return v - v.floorToDouble();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -58,7 +58,7 @@ class RewardPopup extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: scheme.primary.withOpacity(0.12),
+                  color: scheme.primary.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -71,15 +71,16 @@ class RewardPopup extends StatelessWidget {
               Text(
                 'You earned a reward!',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+                      fontWeight: FontWeight.w800,
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
 
               // validity badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.green.shade50,
                   borderRadius: BorderRadius.circular(20),
@@ -88,10 +89,11 @@ class RewardPopup extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.timer_rounded, size: 14, color: Colors.green.shade700),
+                    Icon(Icons.timer_rounded,
+                        size: 14, color: Colors.green.shade700),
                     const SizedBox(width: 6),
                     Text(
-                      'Valid today · ${reward.expiryDate}',
+                      'Valid today - ${reward.expiryDate}',
                       style: TextStyle(
                         color: Colors.green.shade700,
                         fontWeight: FontWeight.w600,
@@ -123,7 +125,8 @@ class RewardPopup extends StatelessWidget {
                       onTap: () async {
                         final uri = Uri.parse(reward.partnerUrl);
                         if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          await launchUrl(uri,
+                              mode: LaunchMode.externalApplication);
                         }
                       },
                       child: RichText(
@@ -157,6 +160,25 @@ class RewardPopup extends StatelessWidget {
                 value: reward.partnerAddress,
                 scheme: scheme,
               ),
+              if (reward.proofId != null) ...[
+                const SizedBox(height: 10),
+                _InfoRow(
+                  icon: Icons.verified_user_rounded,
+                  label: 'Proof ID',
+                  value: reward.proofId!,
+                  scheme: scheme,
+                ),
+              ],
+              if (reward.distanceMeters != null) ...[
+                const SizedBox(height: 10),
+                _InfoRow(
+                  icon: Icons.gps_fixed_rounded,
+                  label: 'GPS proof',
+                  value:
+                      '${reward.distanceMeters!.round()}m from the pin at capture',
+                  scheme: scheme,
+                ),
+              ],
               const SizedBox(height: 6),
 
               // go to location link
@@ -188,8 +210,8 @@ class RewardPopup extends StatelessWidget {
               Text(
                 'Show this to the staff',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurface.withOpacity(0.5),
-                ),
+                      color: scheme.onSurface.withValues(alpha: 0.5),
+                    ),
               ),
               const SizedBox(height: 10),
               Container(
@@ -216,9 +238,9 @@ class RewardPopup extends StatelessWidget {
               Text(
                 reward.qrCode,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurface.withOpacity(0.35),
-                  fontFamily: 'monospace',
-                ),
+                      color: scheme.onSurface.withValues(alpha: 0.35),
+                      fontFamily: 'monospace',
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),

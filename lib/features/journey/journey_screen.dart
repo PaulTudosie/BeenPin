@@ -6,8 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
-import 'package:been/features/level/level_details_screen.dart';
+import 'package:been/features/level/level_path_screen.dart';
 import 'package:been/services/capture_store.dart';
+import 'package:been/services/engagement_store.dart';
 import 'package:been/widgets/polaroid_tile.dart';
 
 class JourneyScreen extends StatefulWidget {
@@ -97,7 +98,7 @@ class _JourneyScreenState extends State<JourneyScreen> {
                   child: GridView.builder(
                     itemCount: captures.length,
                     gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: AppSpacing.md,
                       mainAxisSpacing: AppSpacing.md,
@@ -214,22 +215,20 @@ class _JourneyScreenState extends State<JourneyScreen> {
                       final crossAxisCount = availableWidth >= 900
                           ? 4
                           : availableWidth >= 600
-                          ? 3
-                          : 2;
+                              ? 3
+                              : 2;
 
-                      final tileWidth =
-                          (availableWidth -
+                      final tileWidth = (availableWidth -
                               (horizontalSpacing * (crossAxisCount - 1))) /
-                              crossAxisCount;
+                          crossAxisCount;
 
-                      final tileHeight = tileWidth + 92;
+                      final tileHeight = tileWidth + 112;
 
                       return GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: captures.length,
-                        gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
                           crossAxisSpacing: horizontalSpacing,
                           mainAxisSpacing: verticalSpacing,
@@ -238,45 +237,12 @@ class _JourneyScreenState extends State<JourneyScreen> {
                         itemBuilder: (context, index) {
                           final item = captures[index];
                           final dateText =
-                          DateFormat('dd MMM yyyy').format(item.capturedAt);
+                              DateFormat('dd MMM yyyy').format(item.capturedAt);
 
-                          return PolaroidTile(
-                            image: FileImage(File(item.imagePath)),
-                            spotName: item.spotName,
-                            cityCountry: 'Bucharest, Romania',
+                          return _EngagedPolaroidTile(
+                            record: item,
                             dateText: dateText,
-                            onTap: () {
-                              showDialog<void>(
-                                context: context,
-                                builder: (_) => Dialog(
-                                  insetPadding: const EdgeInsets.all(20),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: AspectRatio(
-                                      aspectRatio: 3 / 4,
-                                      child: Image.file(
-                                        File(item.imagePath),
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            Container(
-                                              color: AppColors.surfaceSoft,
-                                              alignment: Alignment.center,
-                                              child: const Icon(
-                                                Icons
-                                                    .image_not_supported_outlined,
-                                                size: 36,
-                                                color: AppColors.textSecondary,
-                                              ),
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                            onTap: () => _openPhotoPreview(item),
                           );
                         },
                       );
@@ -286,6 +252,37 @@ class _JourneyScreenState extends State<JourneyScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _openPhotoPreview(CaptureRecord record) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: AspectRatio(
+            aspectRatio: 3 / 4,
+            child: Image.file(
+              File(record.imagePath),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: AppColors.surfaceSoft,
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 36,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -341,6 +338,41 @@ class _JourneyScreenState extends State<JourneyScreen> {
   }
 }
 
+class _EngagedPolaroidTile extends StatelessWidget {
+  final CaptureRecord record;
+  final String dateText;
+  final VoidCallback onTap;
+
+  const _EngagedPolaroidTile({
+    required this.record,
+    required this.dateText,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<CaptureEngagement>(
+      future: EngagementStore.getEngagement(record.spotId),
+      builder: (context, snapshot) {
+        final engagement = snapshot.data;
+
+        return PolaroidTile(
+          image: FileImage(File(record.imagePath)),
+          spotName: record.spotName,
+          cityCountry: 'Bucharest, Romania',
+          dateText: dateText,
+          reactionCount: engagement?.reactionCount ?? 0,
+          commentCount: engagement == null
+              ? EngagementStore.demoSeedCommentCount
+              : EngagementStore.displayCommentCount(engagement),
+          hasReacted: engagement?.hasReacted ?? false,
+          onTap: onTap,
+        );
+      },
+    );
+  }
+}
+
 class _ProfileHeader extends StatelessWidget {
   final String levelName;
   final int current;
@@ -360,10 +392,9 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasAvatar =
-        avatarPath != null &&
-            avatarPath!.isNotEmpty &&
-            File(avatarPath!).existsSync();
+    final hasAvatar = avatarPath != null &&
+        avatarPath!.isNotEmpty &&
+        File(avatarPath!).existsSync();
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,18 +411,18 @@ class _ProfileHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   image: hasAvatar
                       ? DecorationImage(
-                    image: FileImage(File(avatarPath!)),
-                    fit: BoxFit.cover,
-                  )
+                          image: FileImage(File(avatarPath!)),
+                          fit: BoxFit.cover,
+                        )
                       : null,
                 ),
                 child: hasAvatar
                     ? null
                     : const Icon(
-                  Icons.person_outline_rounded,
-                  size: 34,
-                  color: AppColors.textSecondary,
-                ),
+                        Icons.person_outline_rounded,
+                        size: 34,
+                        color: AppColors.textSecondary,
+                      ),
               ),
               Positioned(
                 right: 4,
@@ -423,7 +454,7 @@ class _ProfileHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Paul',
+                'Camil',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,

@@ -23,6 +23,8 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  static const double _captureRadiusMeters = 120;
+  static const int _markerIconSize = 48;
   static const _initialPosition = CameraPosition(
     target: LatLng(44.4325, 26.1039),
     zoom: 14.2,
@@ -78,14 +80,14 @@ class _MapScreenState extends State<MapScreen> {
     final bytes = data.buffer.asUint8List();
     final codec = await ui.instantiateImageCodec(
       bytes,
-      targetWidth: 96,
-      targetHeight: 96,
+      targetWidth: _markerIconSize,
+      targetHeight: _markerIconSize,
     );
     final frame = await codec.getNextFrame();
     final byteData = await frame.image.toByteData(
       format: ui.ImageByteFormat.png,
     );
-    return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
+    return BitmapDescriptor.bytes(byteData!.buffer.asUint8List());
   }
 
   Future<void> _loadCapturedIds() async {
@@ -109,7 +111,9 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       _userLatLng = LatLng(
@@ -179,7 +183,7 @@ class _MapScreenState extends State<MapScreen> {
           isCaptured: isCaptured,
           userLatLng: _userLatLng,
           onTakePhoto:
-          isCaptured ? null : () => _startCaptureFlowFromDetail(spot),
+              isCaptured ? null : () => _startCaptureFlowFromDetail(spot),
         ),
       ),
     );
@@ -187,6 +191,17 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _startCaptureFlowFromDetail(Spot spot) async {
     Navigator.of(context).pop();
+    await _runVerifiedCapture(spot);
+  }
+
+  Future<void> _startCaptureFlow(Spot spot) async {
+    Navigator.of(context).pop();
+    await _runVerifiedCapture(spot);
+  }
+
+  Future<void> _runVerifiedCapture(Spot spot) async {
+    final proof = await _verifyCaptureAccess(spot);
+    if (proof == null || !mounted) return;
 
     final result = await Navigator.of(context).push<String>(
       MaterialPageRoute(
@@ -196,9 +211,12 @@ class _MapScreenState extends State<MapScreen> {
 
     if (result == null || result.isEmpty) return;
 
-    await CaptureStore.saveCapture(
+    final capture = await CaptureStore.saveCapture(
       spot: spot,
       imagePath: result,
+      userLatitude: proof.latLng.latitude,
+      userLongitude: proof.latLng.longitude,
+      distanceMeters: proof.distanceMeters,
     );
 
     await _loadCapturedIds();
@@ -210,38 +228,99 @@ class _MapScreenState extends State<MapScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RewardDetailScreen(
-          reward: Reward.generate(spot.id, spotName: spot.name),
+          reward: Reward.generate(
+            spot.id,
+            spotName: spot.name,
+            capturedAt: capture.capturedAt,
+            distanceMeters: capture.distanceMeters,
+            proofId: capture.proofId,
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _startCaptureFlow(Spot spot) async {
-    Navigator.of(context).pop();
+  Future<_CaptureGateProof?> _verifyCaptureAccess(Spot spot) async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _showCaptureGateMessage(
+        'Turn on location to prove you are at this pin.',
+      );
+      return null;
+    }
 
-    final result = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) => CaptureScreen(spot: spot),
-      ),
+    var permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      _showCaptureGateMessage(
+        'Location permission is required before capturing a pin.',
+      );
+      return null;
+    }
+
+    LatLng? verifiedLatLng;
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      verifiedLatLng = LatLng(position.latitude, position.longitude);
+    } catch (_) {
+      verifiedLatLng = _userLatLng;
+    }
+
+    if (verifiedLatLng == null) {
+      _showCaptureGateMessage(
+        'We could not read your GPS location yet. Try again in a moment.',
+      );
+      return null;
+    }
+
+    final distanceMeters = Geolocator.distanceBetween(
+      verifiedLatLng.latitude,
+      verifiedLatLng.longitude,
+      spot.lat,
+      spot.lng,
     );
 
-    if (result == null || result.isEmpty) return;
+    if (mounted) {
+      setState(() {
+        _userLatLng = verifiedLatLng;
+      });
+    }
 
-    await CaptureStore.saveCapture(
-      spot: spot,
-      imagePath: result,
+    if (distanceMeters > _captureRadiusMeters) {
+      final roundedDistance = distanceMeters.round();
+      _showCaptureGateMessage(
+        'Move closer to unlock this pin. You are ${roundedDistance}m away; capture opens within ${_captureRadiusMeters.round()}m.',
+      );
+      return null;
+    }
+
+    return _CaptureGateProof(
+      latLng: verifiedLatLng,
+      distanceMeters: distanceMeters,
     );
+  }
 
-    await _loadCapturedIds();
-    _rebuildMarkers();
-
+  void _showCaptureGateMessage(String message) {
     if (!mounted) return;
-    setState(() {});
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RewardDetailScreen(
-          reward: Reward.generate(spot.id, spotName: spot.name),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.surfaceElevated,
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.textPrimary),
         ),
       ),
     );
@@ -301,12 +380,12 @@ class _MapScreenState extends State<MapScreen> {
           bottom: 20,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: AppColors.surface.withOpacity(0.96),
+              color: AppColors.surface.withValues(alpha: 0.96),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.buttonSecondaryBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 18,
                   offset: const Offset(0, 6),
                 ),
@@ -322,6 +401,16 @@ class _MapScreenState extends State<MapScreen> {
       ],
     );
   }
+}
+
+class _CaptureGateProof {
+  final LatLng latLng;
+  final double distanceMeters;
+
+  const _CaptureGateProof({
+    required this.latLng,
+    required this.distanceMeters,
+  });
 }
 
 class _SpotSheet extends StatelessWidget {
@@ -347,7 +436,7 @@ class _SpotSheet extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 28,
             offset: const Offset(0, 10),
           ),
@@ -478,7 +567,8 @@ class _SpotSheet extends StatelessWidget {
                   minimumSize: const Size.fromHeight(52),
                   foregroundColor: AppColors.textPrimary,
                   backgroundColor: AppColors.buttonSecondaryBg,
-                  side: const BorderSide(color: AppColors.buttonSecondaryBorder),
+                  side:
+                      const BorderSide(color: AppColors.buttonSecondaryBorder),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

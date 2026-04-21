@@ -7,7 +7,7 @@ import 'package:been/core/theme/app_spacing.dart';
 import 'package:been/services/hidden_capture_store.dart';
 
 class HiddenSpotsScreen extends StatefulWidget {
-  final VoidCallback onScanTap;
+  final Future<void> Function() onScanTap;
 
   const HiddenSpotsScreen({
     super.key,
@@ -60,7 +60,6 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: AppSpacing.md),
-
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.lg),
@@ -74,7 +73,11 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                     child: Column(
                       children: [
                         InkWell(
-                          onTap: widget.onScanTap,
+                          onTap: () async {
+                            await widget.onScanTap();
+                            if (!context.mounted) return;
+                            await _reloadCaptures();
+                          },
                           borderRadius: BorderRadius.circular(999),
                           child: Container(
                             width: 92,
@@ -98,44 +101,40 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                           'Have you found a hidden spot?',
                           textAlign: TextAlign.center,
                           style:
-                          Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
-                          ),
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.3,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Scan its code and save it to your hidden collection.',
                           textAlign: TextAlign.center,
                           style:
-                          Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                            height: 1.4,
-                          ),
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    height: 1.4,
+                                  ),
                         ),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: AppSpacing.xl),
-
                   Row(
                     children: [
                       Text(
                         'Hidden discoveries',
                         style:
-                        Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                        ),
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: AppSpacing.md),
-
                   if (captures.isEmpty)
                     Container(
                       width: double.infinity,
@@ -169,21 +168,25 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                           Text(
                             'No hidden spots discovered yet',
                             textAlign: TextAlign.center,
-                            style:
-                            Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'When you unlock one, it will appear here.',
                             textAlign: TextAlign.center,
-                            style:
-                            Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  height: 1.4,
+                                ),
                           ),
                         ],
                       ),
@@ -194,7 +197,7 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       separatorBuilder: (_, __) =>
-                      const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.md),
                       itemBuilder: (context, index) {
                         final item = captures[index];
 
@@ -247,7 +250,7 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                                       decoration: BoxDecoration(
                                         color: AppColors.tabActiveBg,
                                         borderRadius:
-                                        BorderRadius.circular(999),
+                                            BorderRadius.circular(999),
                                         border: Border.all(
                                           color: AppColors.border,
                                         ),
@@ -258,9 +261,9 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                                             .textTheme
                                             .labelMedium
                                             ?.copyWith(
-                                          color: AppColors.brandBlue,
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                              color: AppColors.brandBlue,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                       ),
                                     ),
                                     const SizedBox(height: 10),
@@ -270,10 +273,10 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                                           .textTheme
                                           .titleMedium
                                           ?.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: -0.2,
-                                      ),
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: -0.2,
+                                          ),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
@@ -283,8 +286,8 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
+                                            color: AppColors.textSecondary,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -294,7 +297,6 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                         );
                       },
                     ),
-
                   const SizedBox(height: AppSpacing.xl),
                 ],
               ),

@@ -7,6 +7,9 @@ class PolaroidTile extends StatelessWidget {
   final String cityCountry;
   final String dateText;
   final VoidCallback onTap;
+  final int reactionCount;
+  final int commentCount;
+  final bool hasReacted;
 
   const PolaroidTile({
     super.key,
@@ -15,6 +18,9 @@ class PolaroidTile extends StatelessWidget {
     required this.cityCountry,
     required this.dateText,
     required this.onTap,
+    this.reactionCount = 0,
+    this.commentCount = 0,
+    this.hasReacted = false,
   });
 
   @override
@@ -92,12 +98,64 @@ class PolaroidTile extends StatelessWidget {
                       color: AppColors.textMuted,
                     ),
                   ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _EngagementPill(
+                        icon: hasReacted
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        label: '$reactionCount',
+                        isActive: hasReacted,
+                      ),
+                      const SizedBox(width: 6),
+                      _EngagementPill(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        label: '$commentCount',
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EngagementPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+
+  const _EngagementPill({
+    required this.icon,
+    required this.label,
+    this.isActive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 12,
+          color: isActive ? AppColors.brandBlue : AppColors.textMuted,
+        ),
+        const SizedBox(width: 3),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: isActive ? AppColors.brandBlue : AppColors.textMuted,
+          ),
+        ),
+      ],
     );
   }
 }

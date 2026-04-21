@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/core/theme/app_colors.dart';
+import 'package:been/services/pilot_partner_service.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -35,8 +36,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     final fallbackUri = Uri.parse(
       'https://www.google.com/maps/dir/?api=1'
-          '&destination=${spot.lat},${spot.lng}'
-          '&travelmode=walking',
+      '&destination=${spot.lat},${spot.lng}'
+      '&travelmode=walking',
     );
 
     try {
@@ -116,7 +117,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       return '$hours h walk';
     }
 
-    return '$hours h ${remainingMinutes} min walk';
+    return '$hours h $remainingMinutes min walk';
   }
 
   @override
@@ -125,8 +126,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final category = _displayCategory(spot.type);
     final area = _displayArea(spot.name);
     final description = _descriptionForSpot(spot.name, spot.type);
-    final partnerName = _defaultPartnerForSpot(spot.name);
-    final rewardTeaser = _defaultRewardTeaser(spot.name);
+    final partnerOffer = PilotPartnerService.offerForSpot(spot.id);
     final palette = _spotColors(spot.type);
     final distanceLabel = _distanceLabel();
     final walkTimeLabel = _walkTimeLabel();
@@ -206,9 +206,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         icon: widget.isCaptured
                             ? Icons.check_circle_rounded
                             : Icons.explore_rounded,
-                        label: widget.isCaptured
-                            ? 'Captured'
-                            : 'Ready to explore',
+                        label:
+                            widget.isCaptured ? 'Captured' : 'Ready to explore',
                         foregroundColor: widget.isCaptured
                             ? const Color(0xFF0F766E)
                             : const Color(0xFF1D4ED8),
@@ -236,8 +235,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   ],
                   const SizedBox(height: 20),
                   _RewardCard(
-                    partnerName: partnerName,
-                    rewardTeaser: rewardTeaser,
+                    partnerName: partnerOffer.partnerName,
+                    rewardTeaser: partnerOffer.rewardTitle,
+                    purchaseCondition: partnerOffer.purchaseCondition,
                     isCaptured: widget.isCaptured,
                   ),
                   const SizedBox(height: 28),
@@ -246,19 +246,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   const _BenefitRow(
                     title: 'Strong photo moment',
                     subtitle:
-                    'A recognizable place that feels worth capturing and easy to understand in a demo.',
+                        'A recognizable place that feels worth capturing and easy to understand in a demo.',
                   ),
                   const SizedBox(height: 12),
                   const _BenefitRow(
                     title: 'Good partner logic',
                     subtitle:
-                    'It connects exploration with a nearby real-world business in a believable way.',
+                        'It connects exploration with a nearby real-world business in a believable way.',
                   ),
                   const SizedBox(height: 12),
                   const _BenefitRow(
                     title: 'Simple user flow',
                     subtitle:
-                    'Tap pin, go there, capture, unlock, redeem. Easy to explain to partners.',
+                        'Tap pin, go there, capture, unlock, redeem. Easy to explain to partners.',
                   ),
                   const SizedBox(height: 28),
                   SizedBox(
@@ -405,7 +405,7 @@ class _RouteInfoCard extends StatelessWidget {
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -518,12 +518,13 @@ class _HeroSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
+                  color: Colors.white.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.18),
+                    color: Colors.white.withValues(alpha: 0.18),
                   ),
                 ),
                 child: Text(
@@ -568,11 +569,13 @@ class _HeroSection extends StatelessWidget {
 class _RewardCard extends StatelessWidget {
   final String partnerName;
   final String rewardTeaser;
+  final String purchaseCondition;
   final bool isCaptured;
 
   const _RewardCard({
     required this.partnerName,
     required this.rewardTeaser,
+    required this.purchaseCondition,
     required this.isCaptured,
   });
 
@@ -587,7 +590,7 @@ class _RewardCard extends StatelessWidget {
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -615,7 +618,9 @@ class _RewardCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isCaptured ? 'Reward unlocked nearby' : 'Reward available nearby',
+                  isCaptured
+                      ? 'Reward unlocked nearby'
+                      : 'Reward available nearby',
                   style: const TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
@@ -638,6 +643,16 @@ class _RewardCard extends StatelessWidget {
                     fontSize: 14.5,
                     height: 1.45,
                     color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  purchaseCondition,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    height: 1.35,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -787,7 +802,7 @@ class _CircleTopButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withOpacity(0.16),
+      color: Colors.white.withValues(alpha: 0.16),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -821,10 +836,10 @@ class _TopPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.16),
+          color: Colors.white.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: Colors.white.withOpacity(0.18),
+            color: Colors.white.withValues(alpha: 0.18),
           ),
         ),
         child: Row(
@@ -936,40 +951,6 @@ String _descriptionForSpot(String name, String type) {
         default:
           return 'A curated urban spot designed for exploration, capture, and a nearby real-world reward.';
       }
-  }
-}
-
-String _defaultPartnerForSpot(String spotName) {
-  switch (spotName.toLowerCase()) {
-    case 'ateneul român':
-      return 'Frudisiac';
-    case 'arcul de triumf':
-      return 'City Grill Primăverii';
-    case 'parcul herăstrău':
-      return 'Hard Rock Cafe';
-    case 'hanul lui manuc':
-      return 'Manuc Café';
-    case 'cișmigiu garden':
-      return 'Cișmigiu Bistro';
-    case 'piața victoriei':
-      return 'Two Minutes';
-    default:
-      return 'Local Partner Nearby';
-  }
-}
-
-String _defaultRewardTeaser(String spotName) {
-  switch (spotName.toLowerCase()) {
-    case 'ateneul român':
-      return 'Unlock a small extra with your order after capture.';
-    case 'arcul de triumf':
-      return 'Claim a simple same-day perk at a nearby partner.';
-    case 'parcul herăstrău':
-      return 'A lifestyle-oriented reward that fits the area and feels believable.';
-    case 'hanul lui manuc':
-      return 'Unlock a local extra connected to the Old Town flow.';
-    default:
-      return 'Capture this spot to unlock a real same-day reward nearby.';
   }
 }
 
