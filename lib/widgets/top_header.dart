@@ -132,7 +132,7 @@ class _IconAction extends StatelessWidget {
         height: 40,
         child: Icon(
           icon,
-          color: AppColors.textPrimary,
+          color: AppColors.brandBlue,
           size: iconSize,
         ),
       ),
