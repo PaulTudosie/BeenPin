@@ -70,96 +70,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     });
   }
 
-  Future<void> _editAboutText() async {
-    final controller = TextEditingController(
-      text: _aboutText ?? widget.user.tagline,
-    );
-
-    final updated = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            AppSpacing.xl,
-            AppSpacing.xl,
-            MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Update about me',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                minLines: 3,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  hintText: 'Tell people what kind of places you explore.',
-                  filled: true,
-                  fillColor: AppColors.surfaceSoft,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(color: AppColors.brandBlue),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(
-                    controller.text.trim(),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.brandBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: const Text('Save about me'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    controller.dispose();
-    if (updated == null || updated.isEmpty) return;
-
-    await ProfileAboutStore.saveAbout(widget.user.id, updated);
-    if (!mounted) return;
-
-    setState(() {
-      _aboutText = updated;
-    });
-  }
-
   void _openPhotoPreview(CaptureRecord record) {
     showDialog<void>(
       context: context,
@@ -216,91 +126,172 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(26),
-                      color: AppColors.surfaceSoft,
-                      image: hasAvatar
-                          ? DecorationImage(
-                              image: FileImage(File(avatarPath)),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: hasAvatar
-                        ? null
-                        : const Icon(
-                            Icons.person_rounded,
-                            size: 42,
-                            color: AppColors.textSecondary,
-                          ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                widget.user.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.textPrimary,
-                                      letterSpacing: -0.4,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface.withValues(alpha: 0.89),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.68),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 92,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 68,
+                                  height: 68,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: AppColors.surfaceSoft,
+                                    border: Border.all(
+                                      color: AppColors.border.withValues(
+                                        alpha: 0.66,
+                                      ),
                                     ),
-                              ),
-                            ),
-                            FilledButton(
-                              onPressed:
-                                  _isLoadingFollowState ? null : _toggleFollow,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: _isFollowing
-                                    ? AppColors.textPrimary
-                                    : AppColors.brandBlue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              ),
-                              child:
-                                  Text(_isFollowing ? 'Following' : 'Follow'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          widget.user.city,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    image: hasAvatar
+                                        ? DecorationImage(
+                                            image: FileImage(File(avatarPath)),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : null,
                                   ),
-                        ),
-                        const SizedBox(height: 10),
-                        _ProfileLevelCard(
-                          levelName: widget.user.levelName,
-                          current: widget.captures.length,
-                          target: progress.target,
-                          nextLevelName: progress.nextLevelName,
-                        ),
-                        const SizedBox(height: 8),
-                        _EditableAboutText(
-                          text: _aboutText ?? widget.user.tagline,
-                          onTap: _editAboutText,
-                        ),
-                      ],
+                                  child: hasAvatar
+                                      ? null
+                                      : const Icon(
+                                          Icons.person_rounded,
+                                          size: 34,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                ),
+                                const SizedBox(height: 10),
+                                _ProfileLevelCard(
+                                  levelName: widget.user.levelName,
+                                  current: widget.captures.length,
+                                  target: progress.target,
+                                  nextLevelName: progress.nextLevelName,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.lg),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          widget.user.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.textPrimary,
+                                                letterSpacing: -0.4,
+                                                height: 1.05,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      FilledButton(
+                                        onPressed: _isLoadingFollowState
+                                            ? null
+                                            : _toggleFollow,
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: _isFollowing
+                                              ? AppColors.textPrimary
+                                              : AppColors.brandBlue,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 9,
+                                          ),
+                                          minimumSize: const Size(0, 36),
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          visualDensity: VisualDensity.compact,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          _isFollowing ? 'Following' : 'Follow',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelLarge
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: -0.1,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          widget.user.city,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyLarge
+                                              ?.copyWith(
+                                                color: AppColors.textSecondary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '🇷🇴',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  _ProfileAboutText(
+                                    text: _aboutText ?? widget.user.tagline,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -421,54 +412,71 @@ class _ProfileLevelCard extends StatelessWidget {
         );
       },
       child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        width: 86,
+        padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.7)),
+          color: AppColors.tabActiveBg.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.brandBlue.withValues(alpha: 0.08),
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: AppColors.tabActiveBg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.workspace_premium_rounded,
-                size: 17,
-                color: AppColors.brandBlue,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                Text(
-                  'Level',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.textMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withValues(alpha: 0.76),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    size: 13,
+                    color: AppColors.brandBlue,
+                  ),
                 ),
-                Text(
-                  levelName,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.15,
-                      ),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    'Rank',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: AppColors.brandBlue,
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    levelName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.brandBlue,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: AppColors.brandBlue,
+                ),
+              ],
             ),
           ],
         ),
@@ -477,42 +485,23 @@ class _ProfileLevelCard extends StatelessWidget {
   }
 }
 
-class _EditableAboutText extends StatelessWidget {
+class _ProfileAboutText extends StatelessWidget {
   final String text;
-  final VoidCallback onTap;
 
-  const _EditableAboutText({
+  const _ProfileAboutText({
     required this.text,
-    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textMuted,
-                      height: 1.45,
-                    ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(
-              Icons.edit_rounded,
-              size: 15,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textMuted,
+              height: 1.45,
             ),
-          ],
-        ),
       ),
     );
   }

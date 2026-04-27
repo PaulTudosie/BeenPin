@@ -19,7 +19,7 @@ enum HomeTab {
       case HomeTab.hidden:
         return 'Hidden';
       case HomeTab.notifications:
-        return 'Notifications';
+        return 'Alerts';
       case HomeTab.journey:
         return 'Journey';
     }
@@ -45,10 +45,10 @@ class SubHeaderTabs extends StatelessWidget {
   final HomeTab currentTab;
   final ValueChanged<HomeTab> onTabSelected;
 
-  static const double _barHeight = 78;
-  static const double _tabHeight = 62;
-  static const double _iconFrameSize = 32;
-  static const double _iconSize = 26;
+  static const double _barHeight = 68;
+  static const double _tabHeight = 54;
+  static const double _iconFrameSize = 28;
+  static const double _iconSize = 24;
 
   const SubHeaderTabs({
     super.key,
@@ -61,23 +61,23 @@ class SubHeaderTabs extends StatelessWidget {
     return Container(
       height: _barHeight,
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.sm,
-        6,
-        AppSpacing.sm,
-        8,
+        AppSpacing.xs,
+        3,
+        AppSpacing.xs,
+        4,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface.withValues(alpha: 0.98),
         border: Border(
           top: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.78),
+            color: AppColors.border.withValues(alpha: 0.82),
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 18,
-            offset: const Offset(0, -6),
+            color: Colors.black.withValues(alpha: 0.028),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -95,29 +95,18 @@ class SubHeaderTabs extends StatelessWidget {
     final labelStyle = Theme.of(context).textTheme.labelMedium;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 1),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () => onTabSelected(tab),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
             height: _tabHeight,
-            padding: const EdgeInsets.fromLTRB(4, 7, 4, 6),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? AppColors.tabActiveBg.withValues(alpha: 0.95)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isActive
-                    ? AppColors.brandBlue.withValues(alpha: 0.16)
-                    : Colors.transparent,
-              ),
-            ),
+            padding: const EdgeInsets.fromLTRB(4, 5, 4, 4),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -136,7 +125,7 @@ class SubHeaderTabs extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   tab.label,
                   maxLines: 1,
@@ -144,9 +133,9 @@ class SubHeaderTabs extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: labelStyle?.copyWith(
                     color: foreground,
-                    fontSize: 10.8,
+                    fontSize: 10.5,
                     fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                    letterSpacing: -0.25,
+                    letterSpacing: -0.2,
                     height: 1.0,
                   ),
                 ),

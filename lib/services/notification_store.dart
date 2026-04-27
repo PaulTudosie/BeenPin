@@ -12,12 +12,12 @@ class NotificationStore {
 
     final notifications = raw
         .map((item) {
-      try {
-        return AppNotification.fromJson(item);
-      } catch (_) {
-        return null;
-      }
-    })
+          try {
+            return AppNotification.fromJson(item);
+          } catch (_) {
+            return null;
+          }
+        })
         .whereType<AppNotification>()
         .toList();
 
@@ -54,7 +54,8 @@ class NotificationStore {
         imagePath: imagePath,
         createdAt: DateTime.now(),
         isRead: false,
-        message: '$actorName reacted with $reactionLabel to your spot "$spotName".',
+        message:
+            '$actorName reacted with $reactionLabel to your spot "$spotName".',
       ),
     );
   }
@@ -76,7 +77,8 @@ class NotificationStore {
         imagePath: imagePath,
         createdAt: DateTime.now(),
         isRead: false,
-        message: '$actorName commented on your spot "$spotName": "$commentText"',
+        message:
+            '$actorName commented on your spot "$spotName": "$commentText"',
       ),
     );
   }
@@ -89,9 +91,8 @@ class NotificationStore {
 
   static Future<void> markAsRead(String id) async {
     final current = await getNotifications();
-    final updated = current
-        .map((e) => e.id == id ? e.copyWith(isRead: true) : e)
-        .toList();
+    final updated =
+        current.map((e) => e.id == id ? e.copyWith(isRead: true) : e).toList();
     await saveNotifications(updated);
   }
 

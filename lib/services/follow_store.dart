@@ -5,8 +5,7 @@ class FollowStore {
 
   static Future<Set<String>> getFollowedUserIds() async {
     final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_followedUsersKey) ?? const <String>[])
-        .toSet();
+    return (prefs.getStringList(_followedUsersKey) ?? const <String>[]).toSet();
   }
 
   static Future<bool> isFollowing(String userId) async {

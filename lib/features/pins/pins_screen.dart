@@ -48,39 +48,17 @@ class _PinsScreenState extends State<PinsScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.xl,
-                    AppSpacing.xl,
+                    AppSpacing.lg,
                     AppSpacing.xl,
                     AppSpacing.sm,
                   ),
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Where others have ',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                        TextSpan(
-                          text: 'Been',
-                          style: TextStyle(
-                            color: AppColors.brandBlue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                        ),
-                  ),
+                  child: const _PinsFeedHeader(),
                 ),
               ),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.xl,
-                  AppSpacing.sm,
+                  AppSpacing.xs,
                   AppSpacing.xl,
                   AppSpacing.xxxl,
                 ),
@@ -102,6 +80,39 @@ class _PinsScreenState extends State<PinsScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _PinsFeedHeader extends StatelessWidget {
+  const _PinsFeedHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      const TextSpan(
+        children: [
+          TextSpan(
+            text: 'Where others have ',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
+          TextSpan(
+            text: 'Been',
+            style: TextStyle(
+              color: AppColors.brandBlue,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.28,
+            height: 1.15,
+          ),
     );
   }
 }
@@ -304,16 +315,17 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
         : EngagementStore.displayCommentCount(engagement);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: const [
+          color: AppColors.surface.withValues(alpha: 0.98),
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.72)),
+          boxShadow: [
             BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(2, 6),
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
@@ -321,11 +333,11 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: AspectRatio(
                 aspectRatio: 1.0,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(20),
                   child: Image.file(
                     File(widget.record.imagePath),
                     fit: BoxFit.cover,
@@ -342,18 +354,21 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        width: 28,
-                        height: 28,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           color: AppColors.avatarBg,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.brandBlue.withValues(alpha: 0.12),
+                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -392,31 +407,32 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                       Text(
                         dateText,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.textMuted,
                             ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 8),
                   Text(
                     widget.record.spotName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
-                          letterSpacing: -0.1,
+                          letterSpacing: -0.25,
                           color: AppColors.textPrimary,
                         ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     widget.record.spotType,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
                         ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       GestureDetector(

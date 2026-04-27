@@ -54,7 +54,7 @@ class TopHeader extends StatelessWidget {
                 const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(18),
                     onTap: () {
                       showSearch<void>(
                         context: context,
@@ -62,31 +62,36 @@ class TopHeader extends StatelessWidget {
                       );
                     },
                     child: Container(
-                      height: isLandscape ? 42 : 46,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      height: isLandscape ? 36 : 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 13),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceSoft,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.border),
+                        color: AppColors.surfaceSoft.withValues(alpha: 0.62),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.58),
+                        ),
                       ),
                       child: Row(
                         children: [
                           const Icon(
                             Icons.search_rounded,
                             color: AppColors.textSecondary,
-                            size: 20,
+                            size: 18,
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 9),
                           Expanded(
                             child: Text(
-                              'Search pins, places, users',
+                              'Search pins',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
                                   ?.copyWith(
-                                    color: AppColors.textMuted,
+                                    fontSize: isLandscape ? 13 : 14,
+                                    color: AppColors.textMuted.withValues(
+                                      alpha: 0.92,
+                                    ),
                                     fontWeight: FontWeight.w500,
                                   ),
                             ),

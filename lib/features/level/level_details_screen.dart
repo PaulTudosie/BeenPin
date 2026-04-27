@@ -33,9 +33,9 @@ class LevelDetailsScreen extends StatelessWidget {
     final isTopLevel = currentLevelIndex == _levels.length - 1;
 
     final previousLevelName =
-    currentLevelIndex > 0 ? _levels[currentLevelIndex - 1] : null;
+        currentLevelIndex > 0 ? _levels[currentLevelIndex - 1] : null;
     final resolvedNextLevelName =
-    isTopLevel ? null : _levels[currentLevelIndex + 1];
+        isTopLevel ? null : _levels[currentLevelIndex + 1];
 
     final progressValue = isTopLevel
         ? 1.0
@@ -305,7 +305,7 @@ class _InlineMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment:
-      alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -462,12 +462,12 @@ class _RailLevelCard extends StatelessWidget {
         ),
         boxShadow: isCurrent
             ? [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.035),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ]
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.035),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ]
             : null,
       ),
       child: Column(

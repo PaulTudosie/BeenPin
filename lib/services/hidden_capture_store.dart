@@ -43,8 +43,8 @@ class HiddenCaptureStore {
 
     final captures = rawList
         .map((item) => HiddenCaptureRecord.fromJson(
-      jsonDecode(item) as Map<String, dynamic>,
-    ))
+              jsonDecode(item) as Map<String, dynamic>,
+            ))
         .toList();
 
     captures.sort((a, b) => b.discoveredAt.compareTo(a.discoveredAt));
@@ -55,7 +55,8 @@ class HiddenCaptureStore {
     final prefs = await SharedPreferences.getInstance();
     final captures = await getCaptures();
 
-    final existingIndex = captures.indexWhere((item) => item.spotId == record.spotId);
+    final existingIndex =
+        captures.indexWhere((item) => item.spotId == record.spotId);
 
     if (existingIndex != -1) {
       captures[existingIndex] = record;

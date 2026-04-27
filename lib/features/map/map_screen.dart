@@ -24,7 +24,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   static const double _captureRadiusMeters = 120;
-  static const int _markerIconSize = 48;
+  static const int _markerIconSize = 40;
   static const _initialPosition = CameraPosition(
     target: LatLng(44.4325, 26.1039),
     zoom: 14.2,

@@ -27,7 +27,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   Future<void> _init() async {
     final cams = await availableCameras();
     final back = cams.firstWhere(
-          (c) => c.lensDirection == CameraLensDirection.back,
+      (c) => c.lensDirection == CameraLensDirection.back,
       orElse: () => cams.first,
     );
 
@@ -114,48 +114,48 @@ class _CaptureScreenState extends State<CaptureScreen> {
       body: (c == null || _initFuture == null)
           ? const Center(child: CircularProgressIndicator())
           : FutureBuilder<void>(
-        future: _initFuture,
-        builder: (_, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
+              future: _initFuture,
+              builder: (_, snap) {
+                if (snap.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              CameraPreview(c),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 48,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: _takePicture,
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 4,
-                        ),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CameraPreview(c),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 48,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: _takePicture,
+                          child: Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 4,
+                              ),
+                            ),
+                            child: Container(
+                              margin: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+                  ],
+                );
+              },
+            ),
     );
   }
 }

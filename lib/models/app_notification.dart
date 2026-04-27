@@ -70,7 +70,7 @@ class AppNotification {
     return AppNotification(
       id: map['id'] as String,
       type: AppNotificationType.values.firstWhere(
-            (e) => e.name == map['type'],
+        (e) => e.name == map['type'],
         orElse: () => AppNotificationType.reaction,
       ),
       actorName: map['actorName'] as String? ?? '',

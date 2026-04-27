@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
@@ -19,9 +18,8 @@ class JourneyScreen extends StatefulWidget {
 }
 
 class _JourneyScreenState extends State<JourneyScreen> {
-  static const String _avatarPathKey = 'journey_avatar_path';
-
   String? _avatarPath;
+  String? _userBio;
   late Future<List<CaptureRecord>> _capturesFuture;
 
   @override
@@ -29,11 +27,11 @@ class _JourneyScreenState extends State<JourneyScreen> {
     super.initState();
     _capturesFuture = CaptureStore.getCaptures();
     _loadAvatarPath();
+    _loadUserBio();
   }
 
   Future<void> _loadAvatarPath() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedPath = prefs.getString(_avatarPathKey);
+    final savedPath = await CaptureStore.getAvatarPath();
 
     if (!mounted) return;
 
@@ -43,13 +41,43 @@ class _JourneyScreenState extends State<JourneyScreen> {
   }
 
   Future<void> _saveAvatarPath(String path) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_avatarPathKey, path);
+    await CaptureStore.saveAvatarPath(path);
 
     if (!mounted) return;
 
     setState(() {
       _avatarPath = path;
+    });
+  }
+
+  Future<void> _loadUserBio() async {
+    final bio = await CaptureStore.getUserBio();
+    if (!mounted) return;
+
+    setState(() {
+      _userBio = bio;
+    });
+  }
+
+  Future<void> _editUserBio() async {
+    final updated = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => _BioEditorSheet(initialText: _userBio),
+    );
+
+    if (updated == null) return;
+
+    final normalized = updated.trim();
+    await CaptureStore.saveUserBio(normalized);
+    if (!mounted) return;
+
+    setState(() {
+      _userBio = normalized.isEmpty ? null : normalized;
     });
   }
 
@@ -161,94 +189,132 @@ class _JourneyScreenState extends State<JourneyScreen> {
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xl,
-              AppSpacing.xl,
+              AppSpacing.lg,
               AppSpacing.xl,
               AppSpacing.xxxl,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ProfileHeader(
-                  levelName: progress.levelName,
-                  current: captures.length,
-                  target: progress.target,
-                  nextLevelName: progress.nextLevelName,
-                  avatarPath: _avatarPath,
-                  onAvatarTap: () => _showAvatarPicker(captures),
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                Text.rich(
-                  const TextSpan(
-                    children: [
-                      TextSpan(
-                        text: "Places you've ",
-                        style: TextStyle(
-                          color: AppColors.textMuted,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 980),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ProfileHeader(
+                      levelName: progress.levelName,
+                      current: captures.length,
+                      target: progress.target,
+                      nextLevelName: progress.nextLevelName,
+                      avatarPath: _avatarPath,
+                      userBio: _userBio,
+                      onAvatarTap: () => _showAvatarPicker(captures),
+                      onBioTap: _editUserBio,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text.rich(
+                            const TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: "Places you've ",
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'Been',
+                                  style: TextStyle(
+                                    color: AppColors.brandBlue,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.25,
+                            ),
+                          ),
                         ),
-                      ),
-                      TextSpan(
-                        text: 'Been',
-                        style: TextStyle(
-                          color: AppColors.brandBlue,
-                          fontWeight: FontWeight.w600,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceSoft,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.border.withValues(alpha: 0.72),
+                            ),
+                          ),
+                          child: Text(
+                            '${captures.length} capture${captures.length == 1 ? '' : 's'}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textSecondary,
+                              letterSpacing: -0.1,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (captures.isEmpty)
-                  const _EmptyJourneyState()
-                else
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      const horizontalSpacing = AppSpacing.lg;
-                      const verticalSpacing = AppSpacing.lg;
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    if (captures.isEmpty)
+                      const _EmptyJourneyState()
+                    else
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          const horizontalSpacing = AppSpacing.lg;
+                          const verticalSpacing = 14.0;
 
-                      final availableWidth = constraints.maxWidth;
+                          final availableWidth = constraints.maxWidth;
 
-                      final crossAxisCount = availableWidth >= 900
-                          ? 4
-                          : availableWidth >= 600
-                              ? 3
-                              : 2;
+                          final crossAxisCount = availableWidth >= 900
+                              ? 4
+                              : availableWidth >= 600
+                                  ? 3
+                                  : 2;
 
-                      final tileWidth = (availableWidth -
-                              (horizontalSpacing * (crossAxisCount - 1))) /
-                          crossAxisCount;
+                          final tileWidth = (availableWidth -
+                                  (horizontalSpacing * (crossAxisCount - 1))) /
+                              crossAxisCount;
 
-                      final tileHeight = tileWidth + 112;
+                          final tileHeight =
+                              tileWidth + (availableWidth >= 600 ? 92 : 88);
 
-                      return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: captures.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: horizontalSpacing,
-                          mainAxisSpacing: verticalSpacing,
-                          mainAxisExtent: tileHeight,
-                        ),
-                        itemBuilder: (context, index) {
-                          final item = captures[index];
-                          final dateText =
-                              DateFormat('dd MMM yyyy').format(item.capturedAt);
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: captures.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: horizontalSpacing,
+                              mainAxisSpacing: verticalSpacing,
+                              mainAxisExtent: tileHeight,
+                            ),
+                            itemBuilder: (context, index) {
+                              final item = captures[index];
+                              final dateText = DateFormat(
+                                'dd MMM yyyy',
+                              ).format(item.capturedAt);
 
-                          return _EngagedPolaroidTile(
-                            record: item,
-                            dateText: dateText,
-                            onTap: () => _openPhotoPreview(item),
+                              return _EngagedPolaroidTile(
+                                record: item,
+                                dateText: dateText,
+                                onTap: () => _openPhotoPreview(item),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
-                  ),
-              ],
+                      ),
+                  ],
+                ),
+              ),
             ),
           );
         },
@@ -338,6 +404,100 @@ class _JourneyScreenState extends State<JourneyScreen> {
   }
 }
 
+class _BioEditorSheet extends StatefulWidget {
+  final String? initialText;
+
+  const _BioEditorSheet({
+    required this.initialText,
+  });
+
+  @override
+  State<_BioEditorSheet> createState() => _BioEditorSheetState();
+}
+
+class _BioEditorSheetState extends State<_BioEditorSheet> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialText ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.xl,
+        AppSpacing.xl,
+        MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'About me',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            minLines: 3,
+            maxLines: 5,
+            decoration: InputDecoration(
+              hintText: 'Tell people what kind of places you explore.',
+              filled: true,
+              fillColor: AppColors.surfaceSoft,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: AppColors.brandBlue),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.of(
+                context,
+              ).pop(_controller.text.trim()),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.brandBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: const Text('Save bio'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EngagedPolaroidTile extends StatelessWidget {
   final CaptureRecord record;
   final String dateText;
@@ -379,7 +539,9 @@ class _ProfileHeader extends StatelessWidget {
   final int target;
   final String nextLevelName;
   final String? avatarPath;
+  final String? userBio;
   final VoidCallback onAvatarTap;
+  final VoidCallback onBioTap;
 
   const _ProfileHeader({
     required this.levelName,
@@ -387,7 +549,9 @@ class _ProfileHeader extends StatelessWidget {
     required this.target,
     required this.nextLevelName,
     required this.avatarPath,
+    required this.userBio,
     required this.onAvatarTap,
+    required this.onBioTap,
   });
 
   @override
@@ -396,137 +560,284 @@ class _ProfileHeader extends StatelessWidget {
         avatarPath!.isNotEmpty &&
         File(avatarPath!).existsSync();
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: onAvatarTap,
-          child: Stack(
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(20),
-                  image: hasAvatar
-                      ? DecorationImage(
-                          image: FileImage(File(avatarPath!)),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: hasAvatar
-                    ? null
-                    : const Icon(
-                        Icons.person_outline_rounded,
-                        size: 34,
-                        color: AppColors.textSecondary,
-                      ),
-              ),
-              Positioned(
-                right: 4,
-                bottom: 4,
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: AppColors.brandBlue,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.edit_rounded,
-                    size: 12,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.89),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.68),
         ),
-        const SizedBox(width: AppSpacing.lg),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Camil',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Bucharest, Romania',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => LevelDetailsScreen(
-                        levelName: levelName,
-                        current: current,
-                        target: target,
-                        nextLevelName: nextLevelName,
-                      ),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 92,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: onAvatarTap,
+                  child: Stack(
                     children: [
                       Container(
-                        width: 24,
-                        height: 24,
+                        width: 68,
+                        height: 68,
                         decoration: BoxDecoration(
-                          color: AppColors.tabActiveBg,
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.surfaceSoft,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.border.withValues(alpha: 0.66),
+                          ),
+                          image: hasAvatar
+                              ? DecorationImage(
+                                  image: FileImage(File(avatarPath!)),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
-                        child: const Icon(
-                          Icons.workspace_premium_rounded,
-                          size: 14,
-                          color: AppColors.brandBlue,
-                        ),
+                        child: hasAvatar
+                            ? null
+                            : const Icon(
+                                Icons.person_outline_rounded,
+                                size: 31,
+                                color: AppColors.textSecondary,
+                              ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        levelName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.brandBlue,
-                          letterSpacing: -0.1,
+                      Positioned(
+                        right: 4,
+                        bottom: 4,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: AppColors.brandBlue,
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            size: 12,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: AppColors.brandBlue,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 10),
+                InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => LevelDetailsScreen(
+                          levelName: levelName,
+                          current: current,
+                          target: target,
+                          nextLevelName: nextLevelName,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 86,
+                    padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+                    decoration: BoxDecoration(
+                      color: AppColors.tabActiveBg.withValues(alpha: 0.82),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.brandBlue.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.surface.withValues(alpha: 0.76),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.workspace_premium_rounded,
+                                size: 13,
+                                color: AppColors.brandBlue,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Expanded(
+                              child: Text(
+                                'Rank',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textSecondary,
+                                  letterSpacing: -0.1,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                levelName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.brandBlue,
+                                  letterSpacing: -0.1,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 16,
+                              color: AppColors.brandBlue,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Camil',
+                    style: TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.35,
+                      height: 1.05,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Bucharest, Romania',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Baseline(
+                        baseline: 14,
+                        baselineType: TextBaseline.alphabetic,
+                        child: Text(
+                          '🇷🇴',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontSize: 13,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _ProfileBio(
+                    text: userBio,
+                    onTap: onBioTap,
+                  ),
+                ],
               ),
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileBio extends StatelessWidget {
+  final String? text;
+  final VoidCallback onTap;
+
+  const _ProfileBio({
+    required this.text,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasText = text != null && text!.trim().isNotEmpty;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceSoft.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.border.withValues(alpha: 0.62),
           ),
         ),
-      ],
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                hasText ? text!.trim() : 'Add something about yourself...',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: hasText
+                          ? AppColors.textSecondary
+                          : AppColors.textMuted,
+                      fontWeight: hasText ? FontWeight.w600 : FontWeight.w500,
+                      height: 1.4,
+                    ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(
+              Icons.edit_outlined,
+              size: 16,
+              color: hasText ? AppColors.textSecondary : AppColors.textMuted,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -538,25 +849,44 @@ class _EmptyJourneyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.fromLTRB(22, 26, 22, 26),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surface.withValues(alpha: 0.97),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.68),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 16,
+            offset: const Offset(0, 7),
+          ),
+        ],
       ),
       child: const Column(
         children: [
-          Icon(
-            Icons.photo_camera_back_outlined,
-            size: 34,
-            color: AppColors.textSecondary,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.tabActiveBg,
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
+            child: SizedBox(
+              width: 60,
+              height: 60,
+              child: Icon(
+                Icons.photo_camera_back_outlined,
+                size: 30,
+                color: AppColors.brandBlue,
+              ),
+            ),
           ),
-          SizedBox(height: 12),
+          SizedBox(height: 16),
           Text(
             'Your journey starts on the map',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
               letterSpacing: -0.2,
             ),

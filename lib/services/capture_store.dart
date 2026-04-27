@@ -59,6 +59,7 @@ class CaptureStore {
   static const _capturedIdsKey = 'captured_spot_ids';
   static const _capturesKey = 'capture_records';
   static const _avatarPathKey = 'journey_avatar_path';
+  static const _userBioKey = 'journey_user_bio';
 
   static Future<Set<String>> getCapturedIds() async {
     final prefs = await SharedPreferences.getInstance();
@@ -153,10 +154,25 @@ class CaptureStore {
     await prefs.remove(_avatarPathKey);
   }
 
+  static Future<void> saveUserBio(String bio) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userBioKey, bio);
+  }
+
+  static Future<String?> getUserBio() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bio = prefs.getString(_userBioKey);
+    if (bio == null) return null;
+
+    final trimmed = bio.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_capturedIdsKey);
     await prefs.remove(_capturesKey);
     await prefs.remove(_avatarPathKey);
+    await prefs.remove(_userBioKey);
   }
 }
