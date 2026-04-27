@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/core/theme/app_colors.dart';
+import 'package:been/services/engagement_store.dart';
 import 'package:been/services/pilot_partner_service.dart';
 
 class SpotDetailScreen extends StatefulWidget {
@@ -26,6 +27,53 @@ class SpotDetailScreen extends StatefulWidget {
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   bool _isSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    EngagementStore.savedSpotsVersion.addListener(_handleSavedStateChanged);
+    _loadSavedState();
+  }
+
+  @override
+  void dispose() {
+    EngagementStore.savedSpotsVersion.removeListener(_handleSavedStateChanged);
+    super.dispose();
+  }
+
+  Future<void> _handleSavedStateChanged() async {
+    await _loadSavedState();
+  }
+
+  Future<void> _loadSavedState() async {
+    final isSaved = await EngagementStore.isSpotSaved(widget.spot.id);
+    debugPrint(
+        'SpotDetail saved state: spotId=${widget.spot.id}, saved=$isSaved');
+    if (!mounted) return;
+
+    setState(() {
+      _isSaved = isSaved;
+    });
+  }
+
+  Future<void> _toggleSavedState() async {
+    final nextSaved = !_isSaved;
+    await EngagementStore.setSpotSaved(widget.spot.id, nextSaved);
+    if (!mounted) return;
+
+    setState(() {
+      _isSaved = nextSaved;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          nextSaved ? 'Spot saved to wishlist.' : 'Spot removed from wishlist.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   Future<void> _goToSpot() async {
     final spot = widget.spot;
@@ -128,6 +176,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final description = _descriptionForSpot(spot.name, spot.type);
     final partnerOffer = PilotPartnerService.offerForSpot(spot.id);
     final palette = _spotColors(spot.type);
+    final heroImageAsset = _spotHeroImageAsset(spot);
     final distanceLabel = _distanceLabel();
     final walkTimeLabel = _walkTimeLabel();
 
@@ -164,6 +213,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 category: category,
                 palette: palette,
                 icon: _iconForType(spot.type),
+                imageAssetPath: heroImageAsset,
               ),
             ),
           ),
@@ -310,22 +360,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _isSaved = !_isSaved;
-                        });
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              _isSaved
-                                  ? 'Spot saved to wishlist.'
-                                  : 'Spot removed from wishlist.',
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
+                      onPressed: _toggleSavedState,
                       icon: Icon(
                         _isSaved
                             ? Icons.bookmark_rounded
@@ -473,12 +508,14 @@ class _HeroSection extends StatelessWidget {
   final String category;
   final _SpotPalette palette;
   final IconData icon;
+  final String imageAssetPath;
 
   const _HeroSection({
     required this.title,
     required this.category,
     required this.palette,
     required this.icon,
+    required this.imageAssetPath,
   });
 
   @override
@@ -488,13 +525,40 @@ class _HeroSection extends StatelessWidget {
       children: [
         DecoratedBox(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                palette.primary,
-                palette.secondary,
-              ],
+            color: palette.primary,
+          ),
+        ),
+        Positioned.fill(
+          child: Image(
+            image: AssetImage(imageAssetPath),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    palette.primary,
+                    palette.secondary,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x66000000),
+                  Color(0x33000000),
+                  Color(0xB8000000),
+                ],
+                stops: [0.0, 0.42, 1.0],
+              ),
             ),
           ),
         ),
@@ -564,6 +628,36 @@ class _HeroSection extends StatelessWidget {
       ],
     );
   }
+}
+
+String _spotHeroImageAsset(Spot spot) {
+  switch (spot.id) {
+    case '4':
+      return 'assets/spots/arcul_de_triumf.jpg';
+    case '5':
+      return 'assets/spots/ateneul_roman.jpg';
+    case '14':
+      return 'assets/spots/Parcul_Floreasca.jpg';
+    case '15':
+      return 'assets/spots/obor_market.jpg';
+  }
+
+  final normalizedName = spot.name.toLowerCase();
+
+  if (normalizedName.contains('arcul de triumf')) {
+    return 'assets/spots/arcul_de_triumf.jpg';
+  }
+  if (normalizedName.contains('ateneul')) {
+    return 'assets/spots/ateneul_roman.jpg';
+  }
+  if (normalizedName.contains('floreasca')) {
+    return 'assets/spots/Parcul_Floreasca.jpg';
+  }
+  if (normalizedName.contains('obor')) {
+    return 'assets/spots/obor_market.jpg';
+  }
+
+  return 'assets/spots/obor_market.jpg';
 }
 
 class _RewardCard extends StatelessWidget {

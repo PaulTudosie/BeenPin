@@ -206,7 +206,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                             : _toggleFollow,
                                         style: FilledButton.styleFrom(
                                           backgroundColor: _isFollowing
-                                              ? AppColors.textPrimary
+                                              ? AppColors.brandGreen
                                               : AppColors.brandBlue,
                                           foregroundColor: Colors.white,
                                           padding: const EdgeInsets.symmetric(

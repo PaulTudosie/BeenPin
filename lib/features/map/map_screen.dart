@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -13,6 +14,7 @@ import 'package:been/features/spot/spot_detail_screen.dart';
 import 'package:been/models/reward.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/services/capture_store.dart';
+import 'package:been/services/engagement_store.dart';
 import 'package:been/services/spot_service.dart';
 
 class MapScreen extends StatefulWidget {
@@ -22,7 +24,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   static const double _captureRadiusMeters = 120;
   static const int _markerIconSize = 40;
   static const _initialPosition = CameraPosition(
@@ -35,9 +37,13 @@ class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   BitmapDescriptor? _capturedIcon;
   BitmapDescriptor? _uncapturedIcon;
+  BitmapDescriptor? _savedIcon;
   Set<String> _capturedIds = <String>{};
+  Set<String> _savedIds = <String>{};
   Set<Marker> _markers = <Marker>{};
   bool _isReady = false;
+  bool _isRefreshingSavedIds = false;
+  bool _savedRefreshQueued = false;
 
   LatLng? _userLatLng;
   StreamSubscription<Position>? _positionStream;
@@ -45,11 +51,30 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    EngagementStore.savedSpotsVersion.addListener(_handleSavedSpotsChanged);
     _bootstrap();
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isReady) {
+      _scheduleSavedRefresh();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _scheduleSavedRefresh();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    EngagementStore.savedSpotsVersion.removeListener(_handleSavedSpotsChanged);
     _positionStream?.cancel();
     _mapController?.dispose();
     super.dispose();
@@ -59,6 +84,7 @@ class _MapScreenState extends State<MapScreen> {
     await Future.wait([
       _loadMarkerIcons(),
       _loadCapturedIds(),
+      _loadSavedIds(),
       _initUserLocation(),
     ]);
 
@@ -73,6 +99,7 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _loadMarkerIcons() async {
     _capturedIcon = await _loadMarkerIcon('assets/pins/pin_captured.png');
     _uncapturedIcon = await _loadMarkerIcon('assets/pins/pin_uncaptured.png');
+    _savedIcon = await _loadSavedMarkerIcon();
   }
 
   Future<BitmapDescriptor> _loadMarkerIcon(String assetPath) async {
@@ -92,6 +119,103 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _loadCapturedIds() async {
     _capturedIds = await CaptureStore.getCapturedIds();
+  }
+
+  Future<void> _loadSavedIds() async {
+    _savedIds = await EngagementStore.getSavedSpotIds();
+    debugPrint('Map saved IDs: $_savedIds');
+  }
+
+  Future<void> _handleSavedSpotsChanged() async {
+    await _refreshSavedIdsIfNeeded(force: true);
+  }
+
+  Future<BitmapDescriptor> _loadSavedMarkerIcon() async {
+    try {
+      return await _loadMarkerIcon('assets/pins/pin_saved.png');
+    } catch (_) {
+      return _buildSavedMarkerIcon();
+    }
+  }
+
+  Future<BitmapDescriptor> _buildSavedMarkerIcon() async {
+    final size = Size(
+      _markerIconSize.toDouble(),
+      _markerIconSize.toDouble(),
+    );
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final center = Offset(size.width / 2, size.height / 2 - 4);
+    final circlePaint = Paint()..color = AppColors.brandGreen;
+    final pointerPaint = Paint()..color = AppColors.brandGreen;
+
+    canvas.drawCircle(center, 14, circlePaint);
+    final pointerPath = Path()
+      ..moveTo(center.dx, size.height - 2)
+      ..lineTo(center.dx - 8, center.dy + 7)
+      ..lineTo(center.dx + 8, center.dy + 7)
+      ..close();
+    canvas.drawPath(pointerPath, pointerPaint);
+
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        text: String.fromCharCode(Icons.bookmark_rounded.codePoint),
+        style: TextStyle(
+          fontSize: 17,
+          fontFamily: Icons.bookmark_rounded.fontFamily,
+          package: Icons.bookmark_rounded.fontPackage,
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    )..layout();
+
+    final offset = Offset(
+      center.dx - (textPainter.width / 2),
+      center.dy - (textPainter.height / 2) - 1,
+    );
+
+    textPainter.paint(canvas, offset);
+    final image = await recorder.endRecording().toImage(
+          size.width.toInt(),
+          size.height.toInt(),
+        );
+    final byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+    return BitmapDescriptor.bytes(byteData!.buffer.asUint8List());
+  }
+
+  void _scheduleSavedRefresh() {
+    if (_savedRefreshQueued) return;
+
+    _savedRefreshQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _savedRefreshQueued = false;
+      await _refreshSavedIdsIfNeeded();
+    });
+  }
+
+  Future<void> _refreshSavedIdsIfNeeded({bool force = false}) async {
+    if (_isRefreshingSavedIds) return;
+
+    _isRefreshingSavedIds = true;
+    try {
+      final latestSavedIds = await EngagementStore.getSavedSpotIds();
+      debugPrint('Map saved IDs: $latestSavedIds');
+      final hasChanged = force || !setEquals(_savedIds, latestSavedIds);
+      if (!hasChanged) return;
+
+      _savedIds = latestSavedIds;
+      _rebuildMarkers();
+
+      if (!mounted) return;
+      setState(() {});
+    } finally {
+      _isRefreshingSavedIds = false;
+    }
   }
 
   Future<void> _initUserLocation() async {
@@ -140,15 +264,28 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _rebuildMarkers() {
-    if (_capturedIcon == null || _uncapturedIcon == null) return;
+    if (_capturedIcon == null ||
+        _uncapturedIcon == null ||
+        _savedIcon == null) {
+      return;
+    }
 
     final markers = _spots.map((spot) {
       final captured = _capturedIds.contains(spot.id);
+      final saved = _savedIds.contains(spot.id);
+      debugPrint(
+        'Map marker: spotId=${spot.id}, spotName=${spot.name}, saved=$saved, captured=$captured',
+      );
+      final icon = captured
+          ? _capturedIcon!
+          : saved
+              ? _savedIcon!
+              : _uncapturedIcon!;
 
       return Marker(
         markerId: MarkerId(spot.id),
         position: LatLng(spot.lat, spot.lng),
-        icon: captured ? _capturedIcon! : _uncapturedIcon!,
+        icon: icon,
         anchor: const Offset(0.5, 1.0),
         onTap: () => _showSpotSheet(spot, captured),
       );
@@ -347,6 +484,8 @@ class _MapScreenState extends State<MapScreen> {
         child: CircularProgressIndicator(),
       );
     }
+
+    _scheduleSavedRefresh();
 
     return Stack(
       children: [

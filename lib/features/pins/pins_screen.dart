@@ -8,6 +8,7 @@ import 'package:been/models/social_user.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/services/engagement_store.dart';
 import 'package:been/services/mock_social_service.dart';
+import 'package:been/services/spot_service.dart';
 
 class PinsScreen extends StatefulWidget {
   const PinsScreen({super.key});
@@ -68,9 +69,6 @@ class _PinsScreenState extends State<PinsScreen> {
                       record: captures[i],
                       user: MockSocialService.userForCapture(captures[i], i),
                       allCaptures: captures,
-                      onChanged: () => setState(() {
-                        _capturesFuture = CaptureStore.getCaptures();
-                      }),
                     ),
                     childCount: captures.length,
                   ),
@@ -131,6 +129,21 @@ enum _Reaction {
 }
 
 extension _ReactionVisuals on _Reaction {
+  String get storageValue {
+    switch (this) {
+      case _Reaction.like:
+        return 'like';
+      case _Reaction.love:
+        return 'love';
+      case _Reaction.wow:
+        return 'wow';
+      case _Reaction.save:
+        return 'save';
+      case _Reaction.fun:
+        return 'fun';
+    }
+  }
+
   String get symbol {
     switch (this) {
       case _Reaction.like:
@@ -147,17 +160,32 @@ extension _ReactionVisuals on _Reaction {
   }
 }
 
+_Reaction? _reactionFromStoredType(String? reactionType) {
+  switch (reactionType) {
+    case 'like':
+      return _Reaction.like;
+    case 'love':
+      return _Reaction.love;
+    case 'wow':
+      return _Reaction.wow;
+    case 'save':
+      return _Reaction.save;
+    case 'fun':
+      return _Reaction.fun;
+  }
+
+  return null;
+}
+
 class _PolaroidFeedCard extends StatefulWidget {
   final CaptureRecord record;
   final SocialUser user;
   final List<CaptureRecord> allCaptures;
-  final VoidCallback onChanged;
 
   const _PolaroidFeedCard({
     required this.record,
     required this.user,
     required this.allCaptures,
-    required this.onChanged,
   });
 
   @override
@@ -168,6 +196,13 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
   _Reaction? _myReaction;
   CaptureEngagement? _engagement;
 
+  String get _resolvedSpotId =>
+      SpotService.resolveSpotId(
+        spotId: widget.record.spotId,
+        spotName: widget.record.spotName,
+      ) ??
+      widget.record.spotId;
+
   @override
   void initState() {
     super.initState();
@@ -175,37 +210,52 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
   }
 
   Future<void> _loadEngagement() async {
-    final engagement =
-        await EngagementStore.getEngagement(widget.record.spotId);
+    final engagement = await EngagementStore.getEngagement(_resolvedSpotId);
     if (!mounted) return;
 
     setState(() {
       _engagement = engagement;
-      _myReaction =
-          engagement.hasReacted ? (_myReaction ?? _Reaction.like) : null;
+      _myReaction = _reactionFromStoredType(engagement.selectedReactionType);
     });
   }
 
-  Future<void> _toggleReaction(_Reaction r) async {
-    final previousReaction = _myReaction;
-    setState(() => _myReaction = (_myReaction == r) ? null : r);
-
-    final engagement =
-        await EngagementStore.toggleReaction(widget.record.spotId);
+  Future<void> _persistReaction(_Reaction? reaction) async {
+    final shouldSaveSpot = reaction == _Reaction.save;
+    final engagement = await EngagementStore.setReaction(
+      _resolvedSpotId,
+      reaction?.storageValue,
+    );
+    if (shouldSaveSpot) {
+      debugPrint(
+        'Saved from feed: spotId=${widget.record.spotId}, spotName=${widget.record.spotName}',
+      );
+    }
+    await EngagementStore.setSpotSaved(_resolvedSpotId, shouldSaveSpot);
     if (!mounted) return;
 
     setState(() {
       _engagement = engagement;
-      _myReaction = engagement.hasReacted ? r : null;
+      _myReaction = _reactionFromStoredType(engagement.selectedReactionType);
     });
+  }
 
-    if (previousReaction != _myReaction) {
-      widget.onChanged();
+  Future<void> _selectReaction(_Reaction reaction) async {
+    final isSameReaction = _myReaction == reaction;
+
+    if (isSameReaction) {
+      setState(() => _myReaction = null);
+      await _persistReaction(null);
+      return;
     }
+
+    setState(() => _myReaction = reaction);
+    await _persistReaction(reaction);
   }
 
   void _onTap() {
-    _toggleReaction(_Reaction.like);
+    if (_myReaction == null || _myReaction == _Reaction.like) {
+      _selectReaction(_Reaction.like);
+    }
   }
 
   void _onLongPress() {
@@ -234,7 +284,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
             return GestureDetector(
               onTap: () {
                 Navigator.pop(context);
-                _toggleReaction(r);
+                _selectReaction(r);
               },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -282,7 +332,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _CommentsSheet(
-        spotId: widget.record.spotId,
+        spotId: _resolvedSpotId,
         spotName: widget.record.spotName,
       ),
     );
