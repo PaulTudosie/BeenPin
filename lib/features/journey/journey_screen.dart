@@ -581,7 +581,7 @@ class _ProfileHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 92,
+            width: 98,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -653,8 +653,8 @@ class _ProfileHeader extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    width: 86,
-                    padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(8, 9, 8, 9),
                     decoration: BoxDecoration(
                       color: AppColors.tabActiveBg.withValues(alpha: 0.82),
                       borderRadius: BorderRadius.circular(16),
@@ -663,59 +663,47 @@ class _ProfileHeader extends StatelessWidget {
                       ),
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color:
-                                    AppColors.surface.withValues(alpha: 0.76),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.workspace_premium_rounded,
-                                size: 13,
-                                color: AppColors.brandBlue,
-                              ),
+                        Align(
+                          alignment: Alignment.center,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface.withValues(alpha: 0.76),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            const SizedBox(width: 6),
-                            const Expanded(
-                              child: Text(
-                                'Rank',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textSecondary,
-                                  letterSpacing: -0.1,
-                                ),
-                              ),
+                            child: const Icon(
+                              Icons.workspace_premium_rounded,
+                              size: 14,
+                              color: AppColors.brandBlue,
                             ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 7),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Expanded(
+                            Flexible(
                               child: Text(
                                 levelName,
                                 maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                overflow: TextOverflow.visible,
+                                softWrap: false,
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.brandBlue,
                                   letterSpacing: -0.1,
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 2),
                             const Icon(
                               Icons.chevron_right_rounded,
-                              size: 16,
+                              size: 15,
                               color: AppColors.brandBlue,
                             ),
                           ],
@@ -764,7 +752,7 @@ class _ProfileHeader extends StatelessWidget {
                         baseline: 14,
                         baselineType: TextBaseline.alphabetic,
                         child: Text(
-                          '🇷🇴',
+                          '\u{1F1F7}\u{1F1F4}',
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontSize: 13,

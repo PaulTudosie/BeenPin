@@ -149,7 +149,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            width: 92,
+                            width: 98,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -196,28 +196,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          widget.user.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w900,
-                                                color: AppColors.textPrimary,
-                                                letterSpacing: -0.4,
-                                                height: 1.05,
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      FilledButton(
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final isTight =
+                                          constraints.maxWidth < 205;
+                                      final followButton = FilledButton(
                                         onPressed: _isLoadingFollowState
                                             ? null
                                             : _toggleFollow,
@@ -252,8 +235,48 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                 letterSpacing: -0.1,
                                               ),
                                         ),
-                                      ),
-                                    ],
+                                      );
+
+                                      final nameText = Text(
+                                        widget.user.name,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              color: AppColors.textPrimary,
+                                              letterSpacing: -0.4,
+                                              height: 1.05,
+                                            ),
+                                      );
+
+                                      if (isTight) {
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            nameText,
+                                            const SizedBox(height: 8),
+                                            Align(
+                                              alignment: Alignment.centerRight,
+                                              child: followButton,
+                                            ),
+                                          ],
+                                        );
+                                      }
+
+                                      return Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(child: nameText),
+                                          const SizedBox(width: 10),
+                                          followButton,
+                                        ],
+                                      );
+                                    },
                                   ),
                                   const SizedBox(height: 6),
                                   Row(
@@ -274,7 +297,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '🇷🇴',
+                                        '\u{1F1F7}\u{1F1F4}',
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodyMedium
@@ -304,11 +327,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     TextSpan(
                       text: widget.user.name,
                       style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const TextSpan(text: ' has '),
+                    const TextSpan(
+                      text: 'Been',
+                      style: TextStyle(
                         color: AppColors.brandBlue,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const TextSpan(text: ' has been'),
                   ],
                 ),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -412,8 +442,8 @@ class _ProfileLevelCard extends StatelessWidget {
         );
       },
       child: Container(
-        width: 86,
-        padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(8, 9, 8, 9),
         decoration: BoxDecoration(
           color: AppColors.tabActiveBg.withValues(alpha: 0.82),
           borderRadius: BorderRadius.circular(16),
@@ -422,58 +452,47 @@ class _ProfileLevelCard extends StatelessWidget {
           ),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface.withValues(alpha: 0.76),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.workspace_premium_rounded,
-                    size: 13,
-                    color: AppColors.brandBlue,
-                  ),
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.76),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 6),
-                const Expanded(
-                  child: Text(
-                    'Rank',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 14,
+                  color: AppColors.brandBlue,
                 ),
-              ],
+              ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 7),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
+                Flexible(
                   child: Text(
                     levelName,
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    overflow: TextOverflow.visible,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
                       color: AppColors.brandBlue,
                       letterSpacing: -0.1,
                     ),
                   ),
                 ),
+                const SizedBox(width: 2),
                 const Icon(
                   Icons.chevron_right_rounded,
-                  size: 16,
+                  size: 15,
                   color: AppColors.brandBlue,
                 ),
               ],
