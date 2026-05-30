@@ -53,60 +53,74 @@ class _HomeShellState extends State<HomeShell> {
   void _showMainMenu() {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
+        final mediaQuery = MediaQuery.of(context);
+        final isLandscape = mediaQuery.orientation == Orientation.landscape;
+        final maxHeight = mediaQuery.size.height * (isLandscape ? 0.68 : 0.9);
+
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(999),
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                isLandscape ? 8 : 12,
+                20,
+                20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                _MenuRow(
-                  icon: Icons.person_outline_rounded,
-                  title: 'Account',
-                  subtitle: 'Profile, follows, rewards, and settings',
-                  onTap: () => _openMenuDialog(
-                    context,
+                  SizedBox(height: isLandscape ? 8 : 14),
+                  _MenuRow(
+                    icon: Icons.person_outline_rounded,
                     title: 'Account',
-                    body:
-                        'Account controls will include profile editing, follow history, rewards, and sign-in options.',
+                    subtitle: 'Profile, follows, rewards, and settings',
+                    onTap: () => _openMenuDialog(
+                      context,
+                      title: 'Account',
+                      body:
+                          'Account controls will include profile editing, follow history, rewards, and sign-in options.',
+                    ),
                   ),
-                ),
-                _MenuRow(
-                  icon: Icons.mail_outline_rounded,
-                  title: 'Contact',
-                  subtitle: 'Partner, support, and feedback contact',
-                  onTap: () => _openMenuDialog(
-                    context,
+                  _MenuRow(
+                    icon: Icons.mail_outline_rounded,
                     title: 'Contact',
-                    body:
-                        'For the pilot demo, this can point partners and early users to contact@beenpin.app.',
+                    subtitle: 'Partner, support, and feedback contact',
+                    onTap: () => _openMenuDialog(
+                      context,
+                      title: 'Contact',
+                      body:
+                          'For the pilot demo, this can point partners and early users to contact@beenpin.app.',
+                    ),
                   ),
-                ),
-                _MenuRow(
-                  icon: Icons.info_outline_rounded,
-                  title: 'About BeenPin',
-                  subtitle: 'What the app does and why it exists',
-                  onTap: () => _openMenuDialog(
-                    context,
+                  _MenuRow(
+                    icon: Icons.info_outline_rounded,
                     title: 'About BeenPin',
-                    body:
-                        'BeenPin is an exploration photo game for discovering city pins, proving visits, and unlocking same-day local rewards.',
+                    subtitle: 'What the app does and why it exists',
+                    onTap: () => _openMenuDialog(
+                      context,
+                      title: 'About BeenPin',
+                      body:
+                          'BeenPin is an exploration photo game for discovering city pins, proving visits, and unlocking same-day local rewards.',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -261,12 +275,9 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: SubHeaderTabs(
-          currentTab: _currentTab,
-          onTabSelected: _onTabSelected,
-        ),
+      bottomNavigationBar: SubHeaderTabs(
+        currentTab: _currentTab,
+        onTabSelected: _onTabSelected,
       ),
     );
   }

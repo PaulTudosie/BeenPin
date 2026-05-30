@@ -8,6 +8,7 @@ import 'package:been/models/social_user.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/services/engagement_store.dart';
 import 'package:been/services/mock_social_service.dart';
+import 'package:been/services/saved_spot_store.dart';
 import 'package:been/services/spot_service.dart';
 
 class PinsScreen extends StatefulWidget {
@@ -225,12 +226,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
       _resolvedSpotId,
       reaction?.storageValue,
     );
-    if (shouldSaveSpot) {
-      debugPrint(
-        'Saved from feed: spotId=${widget.record.spotId}, spotName=${widget.record.spotName}',
-      );
-    }
-    await EngagementStore.setSpotSaved(_resolvedSpotId, shouldSaveSpot);
+    await SavedSpotStore.setSaved(_resolvedSpotId, shouldSaveSpot);
     if (!mounted) return;
 
     setState(() {

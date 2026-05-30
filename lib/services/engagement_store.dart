@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:been/services/saved_spot_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CaptureEngagement {
@@ -50,12 +50,11 @@ class CaptureComment {
 
 class EngagementStore {
   static const int demoSeedCommentCount = 3;
-  static final ValueNotifier<int> savedSpotsVersion = ValueNotifier<int>(0);
+  static final savedSpotsVersion = SavedSpotStore.version;
 
   static const _reactionCountsKey = 'capture_reaction_counts';
   static const _reactedSpotIdsKey = 'capture_reacted_spot_ids';
   static const _reactionTypesKey = 'capture_reaction_types';
-  static const _savedSpotIdsKey = 'saved_spot_ids';
   static const _commentsKey = 'capture_comments';
 
   static Future<CaptureEngagement> getEngagement(String spotId) async {
@@ -160,46 +159,15 @@ class EngagementStore {
   }
 
   static Future<Set<String>> getSavedSpotIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedIds = prefs.getStringList(_savedSpotIdsKey);
-    if (storedIds != null) {
-      return storedIds.toSet();
-    }
-
-    final reactedIds =
-        (prefs.getStringList(_reactedSpotIdsKey) ?? <String>[]).toSet();
-    final reactionTypes = _decodeStringMap(prefs.getString(_reactionTypesKey));
-    final migratedIds = reactionTypes.entries
-        .where(
-          (entry) => reactedIds.contains(entry.key) && entry.value == 'save',
-        )
-        .map((entry) => entry.key)
-        .toSet();
-
-    if (migratedIds.isNotEmpty) {
-      await prefs.setStringList(_savedSpotIdsKey, migratedIds.toList());
-    }
-
-    return migratedIds;
+    return SavedSpotStore.getSavedSpotIds();
   }
 
   static Future<bool> isSpotSaved(String spotId) async {
-    final savedIds = await getSavedSpotIds();
-    return savedIds.contains(spotId);
+    return SavedSpotStore.isSaved(spotId);
   }
 
   static Future<void> setSpotSaved(String spotId, bool saved) async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedIds =
-        (prefs.getStringList(_savedSpotIdsKey) ?? <String>[]).toSet();
-    final didChange = saved ? savedIds.add(spotId) : savedIds.remove(spotId);
-
-    await prefs.setStringList(_savedSpotIdsKey, savedIds.toList());
-    debugPrint('Saved spot updated: $spotId = $saved');
-
-    if (didChange) {
-      savedSpotsVersion.value++;
-    }
+    await SavedSpotStore.setSaved(spotId, saved);
   }
 
   static Map<String, int> _decodeIntMap(String? raw) {

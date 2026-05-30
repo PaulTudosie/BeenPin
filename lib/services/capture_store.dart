@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:been/models/spot.dart';
+import 'package:been/services/spot_service.dart';
 
 class CaptureRecord {
   final String spotId;
@@ -41,9 +42,15 @@ class CaptureRecord {
   }
 
   factory CaptureRecord.fromJson(Map<String, dynamic> json) {
+    final spotName = json['spotName'] as String? ?? '';
+    final storedSpotId = json['spotId'] as String?;
+    final spotId = storedSpotId != null && storedSpotId.trim().isNotEmpty
+        ? storedSpotId.trim()
+        : SpotService.resolveSpotId(spotName: spotName) ?? spotName;
+
     return CaptureRecord(
-      spotId: json['spotId'] as String,
-      spotName: json['spotName'] as String,
+      spotId: spotId,
+      spotName: spotName,
       spotType: json['spotType'] as String? ?? '',
       imagePath: json['imagePath'] as String,
       capturedAt: DateTime.parse(json['capturedAt'] as String),

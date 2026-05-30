@@ -115,7 +115,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
             backgroundColor: const Color(0xFFF7F8FA),
             foregroundColor: AppColors.textPrimary,
             title: const Text(
-              'Reward unlocked',
+              'Reward selected',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -133,6 +133,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
                   _PartnerHeader(
                     partnerName: reward.partnerName,
                     partnerCategory: reward.partnerCategory,
+                    badge: reward.selectionBadge,
                   ),
                   const SizedBox(height: 20),
                   if (isRedeemed) ...[
@@ -215,7 +216,13 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
                         const SizedBox(height: 10),
                         _InfoLine(
                           label: 'Valid',
-                          value: 'Today - ${reward.expiryDate}',
+                          value:
+                              'Today until ${reward.expiryTimeLabel} - ${reward.expiryDate}',
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoLine(
+                          label: 'Partner distance',
+                          value: reward.distanceLabel,
                         ),
                         if (proofId != null) ...[
                           const SizedBox(height: 10),
@@ -356,10 +363,12 @@ class _RedeemedStatusCard extends StatelessWidget {
 class _PartnerHeader extends StatelessWidget {
   final String partnerName;
   final String partnerCategory;
+  final String? badge;
 
   const _PartnerHeader({
     required this.partnerName,
     required this.partnerCategory,
+    this.badge,
   });
 
   @override
@@ -413,6 +422,24 @@ class _PartnerHeader extends StatelessWidget {
             ],
           ),
         ),
+        if (badge != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: badge == 'Featured'
+                  ? const Color(0xFFEFF6FF)
+                  : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              badge!,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -499,7 +526,7 @@ class _HeroOfferCard extends StatelessWidget {
               ),
               _OfferChip(
                 icon: Icons.timer_rounded,
-                label: 'Valid today',
+                label: 'Valid until ${reward.expiryTimeLabel}',
               ),
             ],
           ),

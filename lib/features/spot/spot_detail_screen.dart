@@ -4,8 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/core/theme/app_colors.dart';
-import 'package:been/services/engagement_store.dart';
 import 'package:been/services/pilot_partner_service.dart';
+import 'package:been/services/saved_spot_store.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -31,13 +31,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   @override
   void initState() {
     super.initState();
-    EngagementStore.savedSpotsVersion.addListener(_handleSavedStateChanged);
+    SavedSpotStore.version.addListener(_handleSavedStateChanged);
     _loadSavedState();
   }
 
   @override
   void dispose() {
-    EngagementStore.savedSpotsVersion.removeListener(_handleSavedStateChanged);
+    SavedSpotStore.version.removeListener(_handleSavedStateChanged);
     super.dispose();
   }
 
@@ -46,9 +46,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }
 
   Future<void> _loadSavedState() async {
-    final isSaved = await EngagementStore.isSpotSaved(widget.spot.id);
-    debugPrint(
-        'SpotDetail saved state: spotId=${widget.spot.id}, saved=$isSaved');
+    final isSaved = await SavedSpotStore.isSaved(widget.spot.id);
     if (!mounted) return;
 
     setState(() {
@@ -58,7 +56,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   Future<void> _toggleSavedState() async {
     final nextSaved = !_isSaved;
-    await EngagementStore.setSpotSaved(widget.spot.id, nextSaved);
+    await SavedSpotStore.setSaved(widget.spot.id, nextSaved);
     if (!mounted) return;
 
     setState(() {
@@ -363,14 +361,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       onPressed: _toggleSavedState,
                       icon: Icon(
                         _isSaved
-                            ? Icons.bookmark_rounded
-                            : Icons.bookmark_border_rounded,
+                            ? Icons.push_pin_rounded
+                            : Icons.push_pin_outlined,
                       ),
                       label: Text(_isSaved ? 'Saved' : 'Save spot'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: AppColors.border),
+                        foregroundColor:
+                            _isSaved ? AppColors.amber : AppColors.textPrimary,
+                        backgroundColor: _isSaved
+                            ? AppColors.amber.withValues(alpha: 0.10)
+                            : Colors.white,
+                        side: BorderSide(
+                          color: _isSaved
+                              ? AppColors.amber.withValues(alpha: 0.36)
+                              : AppColors.border,
+                        ),
                         minimumSize: const Size.fromHeight(52),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),

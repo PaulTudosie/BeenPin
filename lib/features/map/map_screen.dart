@@ -10,11 +10,11 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:been/capture_screen.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/features/reward/reward_detail_screen.dart';
+import 'package:been/features/reward/reward_selection_sheet.dart';
 import 'package:been/features/spot/spot_detail_screen.dart';
-import 'package:been/models/reward.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/services/capture_store.dart';
-import 'package:been/services/engagement_store.dart';
+import 'package:been/services/saved_spot_store.dart';
 import 'package:been/services/spot_service.dart';
 
 class MapScreen extends StatefulWidget {
@@ -25,7 +25,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
-  static const double _captureRadiusMeters = 120;
+  static const double _captureRadiusMeters = 10000;
   static const int _markerIconSize = 40;
   static const _initialPosition = CameraPosition(
     target: LatLng(44.4325, 26.1039),
@@ -52,7 +52,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    EngagementStore.savedSpotsVersion.addListener(_handleSavedSpotsChanged);
+    SavedSpotStore.version.addListener(_handleSavedSpotsChanged);
     _bootstrap();
   }
 
@@ -74,7 +74,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    EngagementStore.savedSpotsVersion.removeListener(_handleSavedSpotsChanged);
+    SavedSpotStore.version.removeListener(_handleSavedSpotsChanged);
     _positionStream?.cancel();
     _mapController?.dispose();
     super.dispose();
@@ -122,8 +122,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _loadSavedIds() async {
-    _savedIds = await EngagementStore.getSavedSpotIds();
-    debugPrint('Map saved IDs: $_savedIds');
+    _savedIds = await SavedSpotStore.getSavedSpotIds();
   }
 
   Future<void> _handleSavedSpotsChanged() async {
@@ -161,11 +160,11 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       textDirection: TextDirection.ltr,
       textAlign: TextAlign.center,
       text: TextSpan(
-        text: String.fromCharCode(Icons.bookmark_rounded.codePoint),
+        text: String.fromCharCode(Icons.push_pin_rounded.codePoint),
         style: TextStyle(
           fontSize: 17,
-          fontFamily: Icons.bookmark_rounded.fontFamily,
-          package: Icons.bookmark_rounded.fontPackage,
+          fontFamily: Icons.push_pin_rounded.fontFamily,
+          package: Icons.push_pin_rounded.fontPackage,
           color: Colors.white,
           fontWeight: FontWeight.w700,
         ),
@@ -203,8 +202,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
     _isRefreshingSavedIds = true;
     try {
-      final latestSavedIds = await EngagementStore.getSavedSpotIds();
-      debugPrint('Map saved IDs: $latestSavedIds');
+      final latestSavedIds = await SavedSpotStore.getSavedSpotIds();
       final hasChanged = force || !setEquals(_savedIds, latestSavedIds);
       if (!hasChanged) return;
 
@@ -273,9 +271,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     final markers = _spots.map((spot) {
       final captured = _capturedIds.contains(spot.id);
       final saved = _savedIds.contains(spot.id);
-      debugPrint(
-        'Map marker: spotId=${spot.id}, spotName=${spot.name}, saved=$saved, captured=$captured',
-      );
       final icon = captured
           ? _capturedIcon!
           : saved
@@ -300,7 +295,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: false,
+      isScrollControlled: true,
       builder: (_) => _SpotSheet(
         spot: spot,
         isCaptured: isCaptured,
@@ -362,16 +357,24 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     setState(() {});
 
+    final proofId = capture.proofId ??
+        'BP-${spot.id}-${capture.capturedAt.toUtc().millisecondsSinceEpoch}';
+    final selectedReward = await RewardSelectionSheet.show(
+      context,
+      spot: spot,
+      capturedAt: capture.capturedAt,
+      distanceMeters: capture.distanceMeters,
+      proofId: proofId,
+    );
+
+    if (selectedReward == null || !mounted) {
+      return;
+    }
+
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RewardDetailScreen(
-          reward: Reward.generate(
-            spot.id,
-            spotName: spot.name,
-            capturedAt: capture.capturedAt,
-            distanceMeters: capture.distanceMeters,
-            proofId: capture.proofId,
-          ),
+          reward: selectedReward,
         ),
       ),
     );
@@ -567,154 +570,164 @@ class _SpotSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(999),
+    final mediaQuery = MediaQuery.of(context);
+    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+    final maxHeight = mediaQuery.size.height * (isLandscape ? 0.64 : 0.9);
+    final padding = isLandscape ? 12.0 : 20.0;
+    final iconSize = isLandscape ? 38.0 : 44.0;
+    final buttonHeight = isLandscape ? 44.0 : 52.0;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: EdgeInsets.fromLTRB(16, 0, 16, isLandscape ? 8 : 18),
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(isLandscape ? 24 : 28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(padding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  margin: EdgeInsets.only(bottom: isLandscape ? 10 : 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
               ),
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.tabActiveBg,
-                    borderRadius: BorderRadius.circular(14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: iconSize,
+                    height: iconSize,
+                    decoration: BoxDecoration(
+                      color: AppColors.tabActiveBg,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.place_rounded,
+                      color: AppColors.brandBlue,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.place_rounded,
-                    color: AppColors.brandBlue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        spot.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          spot.name,
+                          style: TextStyle(
+                            fontSize: isLandscape ? 16 : 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            _Chip(label: spot.type),
+                            _Chip(label: spot.lat.toStringAsFixed(4)),
+                            _Chip(label: spot.lng.toStringAsFixed(4)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: isLandscape ? 10 : 18),
+              if (isCaptured)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: isLandscape ? 9 : 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.successSoftBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.successSoftBorder),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.brandGreen,
                       ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          _Chip(label: spot.type),
-                          _Chip(label: spot.lat.toStringAsFixed(4)),
-                          _Chip(label: spot.lng.toStringAsFixed(4)),
-                        ],
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Been ✅  You already captured this spot.',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            if (isCaptured)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.successSoftBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.successSoftBorder),
-                ),
-                child: const Row(
+                )
+              else
+                Column(
                   children: [
-                    Icon(
-                      Icons.check_circle_rounded,
-                      color: AppColors.brandGreen,
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Been ✅  You already captured this spot.',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: onTakePhoto,
+                        icon: const Icon(Icons.camera_alt_rounded),
+                        label: const Text('Capture'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.brandBlue,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: Size.fromHeight(buttonHeight),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                       ),
                     ),
+                    SizedBox(height: isLandscape ? 8 : 10),
                   ],
                 ),
-              )
-            else
-              Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: onTakePhoto,
-                      icon: const Icon(Icons.camera_alt_rounded),
-                      label: const Text('Capture'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.brandBlue,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        minimumSize: const Size.fromHeight(52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onViewSpot,
+                  icon: const Icon(Icons.open_in_new_rounded),
+                  label: const Text('View spot'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size.fromHeight(buttonHeight),
+                    foregroundColor: AppColors.textPrimary,
+                    backgroundColor: AppColors.buttonSecondaryBg,
+                    side: const BorderSide(
+                        color: AppColors.buttonSecondaryBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-              ),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onViewSpot,
-                icon: const Icon(Icons.open_in_new_rounded),
-                label: const Text('View spot'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
-                  foregroundColor: AppColors.textPrimary,
-                  backgroundColor: AppColors.buttonSecondaryBg,
-                  side:
-                      const BorderSide(color: AppColors.buttonSecondaryBorder),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

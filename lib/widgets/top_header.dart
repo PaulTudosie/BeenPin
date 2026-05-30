@@ -17,10 +17,10 @@ class TopHeader extends StatelessWidget {
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
 
-    final headerHeight = isLandscape ? 60.0 : 74.0;
-    final logoFontSize = isLandscape ? 22.0 : 24.0;
-    final menuSize = isLandscape ? 26.0 : 28.0;
-    final horizontalPadding = isLandscape ? AppSpacing.lg : AppSpacing.xl;
+    final headerHeight = isLandscape ? 52.0 : 74.0;
+    final logoFontSize = isLandscape ? 20.0 : 24.0;
+    final menuSize = isLandscape ? 24.0 : 28.0;
+    final horizontalPadding = isLandscape ? AppSpacing.md : AppSpacing.xl;
 
     return Container(
       color: AppColors.surface,
@@ -34,11 +34,14 @@ class TopHeader extends StatelessWidget {
               children: [
                 RichText(
                   text: TextSpan(
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontSize: logoFontSize,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
+                    style: (Theme.of(context).textTheme.headlineSmall ??
+                            const TextStyle())
+                        .copyWith(
+                      color: AppColors.textPrimary,
+                      fontSize: logoFontSize,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
                     children: const [
                       TextSpan(
                         text: 'Been',
@@ -51,7 +54,7 @@ class TopHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: AppSpacing.lg),
+                SizedBox(width: isLandscape ? AppSpacing.md : AppSpacing.lg),
                 Expanded(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(18),
@@ -62,8 +65,10 @@ class TopHeader extends StatelessWidget {
                       );
                     },
                     child: Container(
-                      height: isLandscape ? 36 : 40,
-                      padding: const EdgeInsets.symmetric(horizontal: 13),
+                      height: isLandscape ? 34 : 40,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isLandscape ? 11 : 13,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceSoft.withValues(alpha: 0.62),
                         borderRadius: BorderRadius.circular(18),
@@ -84,16 +89,13 @@ class TopHeader extends StatelessWidget {
                               'Search pins',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    fontSize: isLandscape ? 13 : 14,
-                                    color: AppColors.textMuted.withValues(
-                                      alpha: 0.92,
-                                    ),
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                              style: (Theme.of(context).textTheme.bodyMedium ??
+                                      const TextStyle())
+                                  .copyWith(
+                                fontSize: isLandscape ? 13 : 14,
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],

@@ -86,88 +86,20 @@ class _JourneyScreenState extends State<JourneyScreen> {
 
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl,
-              AppSpacing.lg,
-              AppSpacing.xl,
-              AppSpacing.xl,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Choose avatar',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Select one of your captured photos',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                SizedBox(
-                  height: 320,
-                  child: GridView.builder(
-                    itemCount: captures.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: AppSpacing.md,
-                      mainAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 1,
-                    ),
-                    itemBuilder: (context, index) {
-                      final item = captures[index];
-
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: () async {
-                          await _saveAvatarPath(item.imagePath);
-                          if (context.mounted) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: Image.file(
-                            File(item.imagePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: AppColors.surfaceSoft,
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                Icons.image_not_supported_outlined,
-                                size: 28,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (context) => _AvatarPickerSheet(
+        captures: captures,
+        onAvatarSelected: (path) async {
+          await _saveAvatarPath(path);
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        },
+      ),
     );
   }
 
@@ -325,30 +257,46 @@ class _JourneyScreenState extends State<JourneyScreen> {
   void _openPhotoPreview(CaptureRecord record) {
     showDialog<void>(
       context: context,
-      builder: (_) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: AspectRatio(
-            aspectRatio: 3 / 4,
-            child: Image.file(
-              File(record.imagePath),
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AppColors.surfaceSoft,
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 36,
-                  color: AppColors.textSecondary,
+      builder: (_) => LayoutBuilder(
+        builder: (context, constraints) {
+          final mediaQuery = MediaQuery.of(context);
+          final isLandscape = mediaQuery.orientation == Orientation.landscape;
+          final maxWidth = constraints.maxWidth * (isLandscape ? 0.68 : 0.9);
+          final maxHeight = constraints.maxHeight * (isLandscape ? 0.78 : 0.82);
+
+          return Dialog(
+            insetPadding: EdgeInsets.all(isLandscape ? 12 : 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: maxWidth,
+                maxHeight: maxHeight,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 4,
+                  child: Image.file(
+                    File(record.imagePath),
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: AppColors.surfaceSoft,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.image_not_supported_outlined,
+                        size: 36,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -432,67 +380,176 @@ class _BioEditorSheetState extends State<_BioEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-        MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
+    final mediaQuery = MediaQuery.of(context);
+    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+    final viewInsets = mediaQuery.viewInsets.bottom;
+    final maxHeight =
+        mediaQuery.size.height - viewInsets - mediaQuery.padding.top - 12;
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: maxHeight.clamp(120.0, 420.0).toDouble(),
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            isLandscape ? AppSpacing.md : AppSpacing.xl,
+            AppSpacing.xl,
+            viewInsets + (isLandscape ? AppSpacing.md : AppSpacing.xl),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'About me',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              SizedBox(height: isLandscape ? AppSpacing.sm : AppSpacing.md),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                minLines: isLandscape ? 2 : 3,
+                maxLines: isLandscape ? 3 : 5,
+                decoration: InputDecoration(
+                  hintText: 'Tell people what kind of places you explore.',
+                  filled: true,
+                  fillColor: AppColors.surfaceSoft,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: const BorderSide(color: AppColors.brandBlue),
+                  ),
+                ),
+              ),
+              SizedBox(height: isLandscape ? AppSpacing.md : AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(_controller.text.trim()),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.brandBlue,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      vertical: isLandscape ? 11 : 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: const Text('Save bio'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'About me',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
+    );
+  }
+}
+
+class _AvatarPickerSheet extends StatelessWidget {
+  final List<CaptureRecord> captures;
+  final ValueChanged<String> onAvatarSelected;
+
+  const _AvatarPickerSheet({
+    required this.captures,
+    required this.onAvatarSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+    final maxHeight = mediaQuery.size.height * (isLandscape ? 0.72 : 0.9);
+    final crossAxisCount = isLandscape ? 4 : 3;
+    final spacing = isLandscape ? AppSpacing.sm : AppSpacing.md;
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            isLandscape ? AppSpacing.md : AppSpacing.lg,
+            AppSpacing.xl,
+            AppSpacing.xl,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Choose avatar',
+                style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            minLines: 3,
-            maxLines: 5,
-            decoration: InputDecoration(
-              hintText: 'Tell people what kind of places you explore.',
-              filled: true,
-              fillColor: AppColors.surfaceSoft,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: const BorderSide(color: AppColors.brandBlue),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.of(
-                context,
-              ).pop(_controller.text.trim()),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.brandBlue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.2,
                 ),
               ),
-              child: const Text('Save bio'),
-            ),
+              const SizedBox(height: 6),
+              const Text(
+                'Select one of your captured photos',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              SizedBox(height: isLandscape ? AppSpacing.md : AppSpacing.lg),
+              Expanded(
+                child: GridView.builder(
+                  itemCount: captures.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: spacing,
+                    mainAxisSpacing: spacing,
+                    childAspectRatio: 1,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = captures[index];
+
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => onAvatarSelected(item.imagePath),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.file(
+                          File(item.imagePath),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AppColors.surfaceSoft,
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.image_not_supported_outlined,
+                              size: 28,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

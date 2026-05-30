@@ -60,9 +60,10 @@ class AppTheme {
   }
 
   static TextStyle? _withFont(TextStyle? style, FontWeight weight) {
-    return style?.copyWith(
+    return (style ?? const TextStyle()).copyWith(
       fontFamily: AppTypography.fontFamily,
       fontWeight: weight,
+      color: AppColors.textPrimary,
     );
   }
 }
