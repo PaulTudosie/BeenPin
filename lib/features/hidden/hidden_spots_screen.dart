@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
+import 'package:been/core/theme/app_typography.dart';
 import 'package:been/services/hidden_capture_store.dart';
 
 class HiddenSpotsScreen extends StatefulWidget {
@@ -100,22 +101,15 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                         Text(
                           'Have you found a hidden spot?',
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.3,
-                                  ),
+                          style: context.appTextStyles.screenTitle,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Scan its code and save it to your hidden collection.',
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    height: 1.4,
-                                  ),
+                          style: context.appTextStyles.bodyText.copyWith(
+                            height: 1.4,
+                          ),
                         ),
                       ],
                     ),
@@ -125,12 +119,7 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                     children: [
                       Text(
                         'Hidden discoveries',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.2,
-                                ),
+                        style: context.appTextStyles.sectionTitle,
                       ),
                     ],
                   ),
@@ -168,25 +157,15 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                           Text(
                             'No hidden spots discovered yet',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            style: context.appTextStyles.sectionTitle,
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'When you unlock one, it will appear here.',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: AppColors.textSecondary,
-                                  height: 1.4,
-                                ),
+                            style: context.appTextStyles.bodyText.copyWith(
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
@@ -262,32 +241,23 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                                             .labelMedium
                                             ?.copyWith(
                                               color: AppColors.brandBlue,
-                                              fontWeight: FontWeight.w700,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                       ),
                                     ),
                                     const SizedBox(height: 10),
                                     Text(
                                       item.spotName,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            color: AppColors.textPrimary,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: -0.2,
-                                          ),
+                                      style: context.appTextStyles.sectionTitle,
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
                                       DateFormat('dd MMM yyyy')
                                           .format(item.discoveredAt),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
+                                      style: context.appTextStyles.captionText
+                                          .copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
                                   ],
                                 ),

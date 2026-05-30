@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_radii.dart';
 import 'package:been/core/theme/app_spacing.dart';
+import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/search/app_search_delegate.dart';
 
 class TopHeader extends StatelessWidget {
@@ -18,7 +19,6 @@ class TopHeader extends StatelessWidget {
         MediaQuery.of(context).orientation == Orientation.landscape;
 
     final headerHeight = isLandscape ? 52.0 : 74.0;
-    final logoFontSize = isLandscape ? 20.0 : 24.0;
     final menuSize = isLandscape ? 24.0 : 28.0;
     final horizontalPadding = isLandscape ? AppSpacing.md : AppSpacing.xl;
 
@@ -34,13 +34,8 @@ class TopHeader extends StatelessWidget {
               children: [
                 RichText(
                   text: TextSpan(
-                    style: (Theme.of(context).textTheme.headlineSmall ??
-                            const TextStyle())
-                        .copyWith(
+                    style: context.appTextStyles.headerTitle.copyWith(
                       color: AppColors.textPrimary,
-                      fontSize: logoFontSize,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
                     ),
                     children: const [
                       TextSpan(

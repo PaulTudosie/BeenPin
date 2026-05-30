@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
+import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/spot/spot_detail_screen.dart';
 import 'package:been/models/app_notification.dart';
 import 'package:been/models/spot.dart';
@@ -253,22 +254,17 @@ class _NotificationsHeader extends StatelessWidget {
               children: [
                 Text(
                   isCaughtUp ? 'All caught up' : '$unreadCount unread',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.3,
-                      ),
+                  style: context.appTextStyles.sectionTitle,
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '$totalCount update${totalCount == 1 ? '' : 's'} from your captures',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
+                  style: context.appTextStyles.captionText.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.2,
+                  ),
                 ),
               ],
             ),
@@ -322,11 +318,7 @@ class _NotificationSectionCard extends StatelessWidget {
             padding: const EdgeInsets.only(left: 3, bottom: 8),
             child: Text(
               section.title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.16,
-                  ),
+              style: context.appTextStyles.sectionTitle,
             ),
           ),
           Container(
@@ -464,21 +456,14 @@ class _NotificationTile extends StatelessWidget {
                                 .labelLarge
                                 ?.copyWith(
                                   color: AppColors.textPrimary,
-                                  fontWeight: isUnread
-                                      ? FontWeight.w900
-                                      : FontWeight.w700,
-                                  letterSpacing: -0.15,
+                                  fontWeight: FontWeight.w600,
                                 ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _timeAgo(item.createdAt),
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: AppColors.textMuted,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                          style: context.appTextStyles.captionText,
                         ),
                       ],
                     ),
@@ -487,11 +472,10 @@ class _NotificationTile extends StatelessWidget {
                       item.message,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                            height: 1.35,
-                          ),
+                      style: context.appTextStyles.bodyText.copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
                     ),
                     const SizedBox(height: 7),
                     Row(
@@ -512,8 +496,7 @@ class _NotificationTile extends StatelessWidget {
                                 .labelSmall
                                 ?.copyWith(
                                   color: AppColors.brandGreen,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.1,
+                                  fontWeight: FontWeight.w600,
                                 ),
                           ),
                         ),
@@ -638,21 +621,15 @@ class _EmptyNotificationsState extends StatelessWidget {
               Text(
                 'No notifications yet',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.35,
-                    ),
+                style: context.appTextStyles.screenTitle,
               ),
               const SizedBox(height: 8),
               Text(
                 'Reactions and comments on captured spots will appear here.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                      height: 1.4,
-                    ),
+                style: context.appTextStyles.bodyText.copyWith(
+                  height: 1.4,
+                ),
               ),
             ],
           ),

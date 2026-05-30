@@ -268,7 +268,7 @@ class _TabLabel extends StatelessWidget {
         style: (style ?? const TextStyle()).copyWith(
           color: color,
           fontSize: _SubHeaderMetrics.from(context).labelFontSize,
-          fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.w600,
           letterSpacing: 0,
           height: 1.0,
         ),

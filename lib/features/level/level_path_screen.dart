@@ -53,9 +53,9 @@ class LevelDetailsScreen extends StatelessWidget {
         title: Text(
           'Level details',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
-                letterSpacing: -0.3,
+                letterSpacing: 0,
               ),
         ),
       ),
@@ -156,9 +156,9 @@ class _CompactHeroCard extends StatelessWidget {
                 Text(
                   levelName,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
-                        letterSpacing: -0.45,
+                        letterSpacing: 0,
                       ),
                 ),
                 const SizedBox(height: 2),
@@ -196,7 +196,7 @@ class _CompactHeroCard extends StatelessWidget {
                     Text(
                       '$current / $target',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                     ),
@@ -287,9 +287,9 @@ class _InlineMetric extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
-                letterSpacing: -0.2,
+                letterSpacing: 0,
               ),
         ),
       ],
@@ -331,9 +331,9 @@ class _LevelTimeline extends StatelessWidget {
           Text(
             'Level path',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
-                  letterSpacing: -0.2,
+                  letterSpacing: 0,
                 ),
           ),
           const SizedBox(height: 4),
@@ -446,10 +446,10 @@ class _TimelineLevelRow extends StatelessWidget {
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: isCurrent
-                                        ? FontWeight.w800
-                                        : FontWeight.w700,
+                                        ? FontWeight.w600
+                                        : FontWeight.w600,
                                     color: AppColors.textPrimary,
-                                    letterSpacing: -0.15,
+                                    letterSpacing: 0,
                                   ),
                         ),
                       ),
@@ -459,7 +459,7 @@ class _TimelineLevelRow extends StatelessWidget {
                             : '${level.requiredPins} pins',
                         style:
                             Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   color: accent,
                                 ),
                       ),

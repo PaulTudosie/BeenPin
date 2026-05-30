@@ -245,8 +245,8 @@ class _BeenPinOpeningScreenState extends State<BeenPinOpeningScreen>
                                 .displaySmall
                                 ?.copyWith(
                                   fontSize: 32,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.5,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0,
                                   height: 1.0,
                                 ),
                             children: const [
@@ -319,8 +319,8 @@ class _LoginHeroSection extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.2,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
                 ),
           ),
           const SizedBox(height: 8),
@@ -355,7 +355,7 @@ class _LoginHeroSection extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Colors.redAccent,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ],
@@ -417,13 +417,13 @@ class _FadedLoginField extends StatelessWidget {
       onSubmitted: onSubmitted,
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textMuted.withValues(alpha: 0.72),
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
         prefixIcon: Icon(
           icon,

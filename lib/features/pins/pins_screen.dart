@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
+import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/profile/user_profile_screen.dart';
 import 'package:been/models/social_user.dart';
 import 'package:been/services/capture_store.dart';
@@ -99,19 +100,17 @@ class _PinsFeedHeader extends StatelessWidget {
             text: 'Been',
             style: TextStyle(
               color: AppColors.brandBlue,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.28,
-            height: 1.15,
-          ),
+      style: context.appTextStyles.screenTitle.copyWith(
+        color: AppColors.textPrimary,
+        height: 1.15,
+      ),
     );
   }
 }
@@ -424,7 +423,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                                 .labelLarge
                                 ?.copyWith(
                                   color: AppColors.brandBlue,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                 ),
                           ),
                         ),
@@ -440,10 +439,9 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                               widget.user.name,
                               style: Theme.of(context)
                                   .textTheme
-                                  .labelLarge
+                                  .labelMedium
                                   ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.1,
+                                    fontWeight: FontWeight.w500,
                                     color: AppColors.textPrimary,
                                   ),
                             ),
@@ -452,10 +450,7 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                       ),
                       Text(
                         dateText,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textMuted,
-                            ),
+                        style: context.appTextStyles.captionText,
                       ),
                     ],
                   ),
@@ -464,19 +459,16 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                     widget.record.spotName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.25,
-                          color: AppColors.textPrimary,
-                        ),
+                    style: context.appTextStyles.sectionTitle.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     widget.record.spotType,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
+                    style: context.appTextStyles.captionText.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -678,10 +670,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                 child: Text(
                   widget.spotName,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
+                  style: context.appTextStyles.sectionTitle,
                 ),
               ),
               const Divider(height: 1),
@@ -846,16 +835,16 @@ class _CommentRow extends StatelessWidget {
                 Text(
                   user,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   text,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
+                  style: context.appTextStyles.bodyText.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ],
             ),
@@ -892,19 +881,13 @@ class _EmptyPinsState extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'No pins yet',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
+                style: context.appTextStyles.sectionTitle,
               ),
               const SizedBox(height: 8),
               Text(
                 'Capture your first spot from the map and it will appear here.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: AppColors.textSecondary),
+                style: context.appTextStyles.bodyText,
               ),
             ],
           ),

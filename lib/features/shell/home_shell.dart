@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:been/core/theme/app_colors.dart';
+import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/hidden/hidden_spots_screen.dart';
 import 'package:been/features/journey/journey_screen.dart';
 import 'package:been/features/map/map_screen.dart';
@@ -172,18 +173,14 @@ class _HomeShellState extends State<HomeShell> {
               children: [
                 Text(
                   'Demo hidden QR scan',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  style: context.appTextStyles.sectionTitle,
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Use this before physical QR stickers are printed. It simulates scanning a hidden street code.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.35,
-                      ),
+                  style: context.appTextStyles.bodyText.copyWith(
+                    height: 1.35,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 ...HiddenSpotService.spots.map((spot) {
@@ -310,16 +307,13 @@ class _HiddenScanRow extends StatelessWidget {
       ),
       title: Text(
         spot.name,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
+        style: context.appTextStyles.sectionTitle,
       ),
       subtitle: Text(
         spot.clue,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+        style: context.appTextStyles.captionText.copyWith(
+          color: AppColors.textSecondary,
+        ),
       ),
       trailing: const Icon(
         Icons.chevron_right_rounded,
@@ -361,16 +355,13 @@ class _MenuRow extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
+        style: context.appTextStyles.sectionTitle,
       ),
       subtitle: Text(
         subtitle,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+        style: context.appTextStyles.captionText.copyWith(
+          color: AppColors.textSecondary,
+        ),
       ),
       trailing: const Icon(
         Icons.chevron_right_rounded,

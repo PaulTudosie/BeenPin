@@ -9,6 +9,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'package:been/capture_screen.dart';
 import 'package:been/core/theme/app_colors.dart';
+import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/reward/reward_detail_screen.dart';
 import 'package:been/features/reward/reward_selection_sheet.dart';
 import 'package:been/features/spot/spot_detail_screen.dart';
@@ -166,7 +167,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           fontFamily: Icons.push_pin_rounded.fontFamily,
           package: Icons.push_pin_rounded.fontPackage,
           color: Colors.white,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     )..layout();
@@ -632,10 +633,8 @@ class _SpotSheet extends StatelessWidget {
                       children: [
                         Text(
                           spot.name,
-                          style: TextStyle(
+                          style: context.appTextStyles.sectionTitle.copyWith(
                             fontSize: isLandscape ? 16 : 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 6),

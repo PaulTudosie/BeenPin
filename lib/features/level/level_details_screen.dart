@@ -56,9 +56,9 @@ class LevelDetailsScreen extends StatelessWidget {
           'Level details',
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
-            letterSpacing: -0.3,
+            letterSpacing: 0,
           ),
         ),
       ),
@@ -136,11 +136,11 @@ class _PremiumHeroCard extends StatelessWidget {
           ],
         ),
         border: Border.all(
-          color: AppColors.border.withOpacity(0.65),
+          color: AppColors.border.withValues(alpha: 0.65),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.045),
+            color: Colors.black.withValues(alpha: 0.045),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -162,7 +162,7 @@ class _PremiumHeroCard extends StatelessWidget {
                 ],
               ),
               border: Border.all(
-                color: AppColors.border.withOpacity(0.55),
+                color: AppColors.border.withValues(alpha: 0.55),
               ),
             ),
             child: const Icon(
@@ -176,9 +176,9 @@ class _PremiumHeroCard extends StatelessWidget {
             levelName,
             style: const TextStyle(
               fontSize: 26,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
-              letterSpacing: -0.45,
+              letterSpacing: 0,
             ),
           ),
           const SizedBox(height: 6),
@@ -219,7 +219,7 @@ class _PremiumHeroCard extends StatelessWidget {
                 '$current / $target',
                 style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -254,11 +254,11 @@ class _CompactProgressPanel extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: AppColors.border.withOpacity(0.7),
+          color: AppColors.border.withValues(alpha: 0.7),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -275,7 +275,7 @@ class _CompactProgressPanel extends StatelessWidget {
           Container(
             width: 1,
             height: 34,
-            color: AppColors.border.withOpacity(0.8),
+            color: AppColors.border.withValues(alpha: 0.8),
           ),
           Expanded(
             child: _InlineMetric(
@@ -321,9 +321,9 @@ class _InlineMetric extends StatelessWidget {
           value,
           style: const TextStyle(
             fontSize: 17,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
-            letterSpacing: -0.2,
+            letterSpacing: 0,
           ),
         ),
       ],
@@ -381,11 +381,11 @@ class _SwipeLevelRail extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: AppColors.border.withOpacity(0.7),
+          color: AppColors.border.withValues(alpha: 0.7),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -398,9 +398,9 @@ class _SwipeLevelRail extends StatelessWidget {
             'Level ladder',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
-              letterSpacing: -0.2,
+              letterSpacing: 0,
             ),
           ),
           const SizedBox(height: 6),
@@ -457,13 +457,13 @@ class _RailLevelCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isCurrent
-              ? AppColors.brandBlue.withOpacity(0.18)
-              : AppColors.border.withOpacity(0.8),
+              ? AppColors.brandBlue.withValues(alpha: 0.18)
+              : AppColors.border.withValues(alpha: 0.8),
         ),
         boxShadow: isCurrent
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.035),
+                  color: Colors.black.withValues(alpha: 0.035),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -492,7 +492,7 @@ class _RailLevelCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: foreground.withOpacity(0.72),
+              color: foreground.withValues(alpha: 0.72),
             ),
           ),
           const SizedBox(height: 4),
@@ -502,9 +502,9 @@ class _RailLevelCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 18,
-              fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w700,
+              fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w600,
               color: foreground,
-              letterSpacing: -0.25,
+              letterSpacing: 0,
             ),
           ),
         ],

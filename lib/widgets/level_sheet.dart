@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
+import 'package:been/core/theme/app_typography.dart';
 
 class LevelSheet extends StatelessWidget {
   final String levelName;
@@ -37,16 +38,12 @@ class LevelSheet extends StatelessWidget {
           ),
           Text(
             levelName,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
+            style: context.appTextStyles.screenTitle,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             '$current / $target spots',
-            style: const TextStyle(
+            style: context.appTextStyles.captionText.copyWith(
               color: AppColors.textMuted,
             ),
           ),
@@ -71,7 +68,7 @@ class LevelSheet extends StatelessWidget {
             current >= target
                 ? 'You’re ready for the next level!'
                 : 'Visit ${target - current} more spots to level up.',
-            style: const TextStyle(
+            style: context.appTextStyles.bodyText.copyWith(
               color: AppColors.textPrimary,
             ),
           ),

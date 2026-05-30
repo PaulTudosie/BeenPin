@@ -117,7 +117,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
             title: const Text(
               'Reward selected',
               style: TextStyle(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -194,7 +194,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
                           'Reward details',
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                         ),
@@ -349,7 +349,7 @@ class _RedeemedStatusCard extends StatelessWidget {
               'Redeemed at ${DateFormat('dd MMM yyyy, HH:mm').format(redemption.redeemedAt)}. This proof ID is now one-use on this demo device.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     height: 1.35,
                   ),
             ),
@@ -396,8 +396,8 @@ class _PartnerHeader extends StatelessWidget {
               const Text(
                 'Partner',
                 style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -406,7 +406,7 @@ class _PartnerHeader extends StatelessWidget {
                 partnerName,
                 style: const TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -414,7 +414,7 @@ class _PartnerHeader extends StatelessWidget {
               Text(
                 partnerCategory,
                 style: const TextStyle(
-                  fontSize: 14.5,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary,
                 ),
@@ -435,7 +435,7 @@ class _PartnerHeader extends StatelessWidget {
               badge!,
               style: const TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -489,8 +489,8 @@ class _HeroOfferCard extends StatelessWidget {
               'YOUR EXTRA TODAY',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 0.7,
               ),
             ),
@@ -501,7 +501,7 @@ class _HeroOfferCard extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               height: 1.08,
             ),
           ),
@@ -563,8 +563,8 @@ class _OfferChip extends StatelessWidget {
             label,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -617,8 +617,8 @@ class _ActionCard extends StatelessWidget {
                 child: Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                     height: 1.35,
                   ),
@@ -630,7 +630,7 @@ class _ActionCard extends StatelessWidget {
           Text(
             subtitle,
             style: const TextStyle(
-              fontSize: 14.5,
+              fontSize: 14,
               height: 1.45,
               color: AppColors.textSecondary,
             ),
@@ -681,7 +681,7 @@ class _StepRow extends StatelessWidget {
           child: Text(
             number,
             style: const TextStyle(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: Color(0xFF2563EB),
             ),
           ),
@@ -694,8 +694,8 @@ class _StepRow extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -703,7 +703,7 @@ class _StepRow extends StatelessWidget {
               Text(
                 subtitle,
                 style: const TextStyle(
-                  fontSize: 14.5,
+                  fontSize: 14,
                   height: 1.45,
                   color: AppColors.textSecondary,
                 ),
@@ -731,13 +731,13 @@ class _InfoLine extends StatelessWidget {
       text: TextSpan(
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textPrimary,
-              fontSize: 14.5,
+              fontSize: 14,
               height: 1.45,
             ),
         children: [
           TextSpan(
             text: '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           TextSpan(text: value),
         ],
@@ -759,7 +759,7 @@ class _SectionTitle extends StatelessWidget {
       title,
       style: const TextStyle(
         fontSize: 21,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
     );

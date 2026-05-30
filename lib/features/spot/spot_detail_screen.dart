@@ -225,7 +225,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     spot.name,
                     style: const TextStyle(
                       fontSize: 30,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                       height: 1.05,
                     ),
@@ -269,7 +269,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   Text(
                     description,
                     style: const TextStyle(
-                      fontSize: 15.5,
+                      fontSize: 16,
                       height: 1.55,
                       color: AppColors.textSecondary,
                     ),
@@ -399,7 +399,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           'Spot coordinates',
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                         ),
@@ -474,8 +474,8 @@ class _RouteInfoCard extends StatelessWidget {
                 const Text(
                   'From your location',
                   style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.brandBlue,
                   ),
                 ),
@@ -484,7 +484,7 @@ class _RouteInfoCard extends StatelessWidget {
                   distanceLabel ?? 'Distance unavailable',
                   style: const TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -493,7 +493,7 @@ class _RouteInfoCard extends StatelessWidget {
                   Text(
                     walkTimeLabel!,
                     style: const TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 14,
                       height: 1.45,
                       color: AppColors.textSecondary,
                     ),
@@ -600,8 +600,8 @@ class _HeroSection extends StatelessWidget {
                   category.toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 0.7,
                   ),
                 ),
@@ -614,7 +614,7 @@ class _HeroSection extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 31,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   height: 1.05,
                 ),
               ),
@@ -721,8 +721,8 @@ class _RewardCard extends StatelessWidget {
                       ? 'Reward unlocked nearby'
                       : 'Reward available nearby',
                   style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.brandGreen,
                   ),
                 ),
@@ -731,7 +731,7 @@ class _RewardCard extends StatelessWidget {
                   partnerName,
                   style: const TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -739,7 +739,7 @@ class _RewardCard extends StatelessWidget {
                 Text(
                   rewardTeaser,
                   style: const TextStyle(
-                    fontSize: 14.5,
+                    fontSize: 14,
                     height: 1.45,
                     color: AppColors.textSecondary,
                   ),
@@ -806,8 +806,8 @@ class _BenefitRow extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -815,7 +815,7 @@ class _BenefitRow extends StatelessWidget {
               Text(
                 subtitle,
                 style: const TextStyle(
-                  fontSize: 14.5,
+                  fontSize: 14,
                   height: 1.45,
                   color: AppColors.textSecondary,
                 ),
@@ -841,7 +841,7 @@ class _SectionTitle extends StatelessWidget {
       title,
       style: const TextStyle(
         fontSize: 22,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
     );
@@ -878,7 +878,7 @@ class _MetaChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 13.2,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: foregroundColor,
             ),
@@ -949,8 +949,8 @@ class _TopPill extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),
             ),

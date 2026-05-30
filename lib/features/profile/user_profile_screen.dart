@@ -231,8 +231,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                               .labelLarge
                                               ?.copyWith(
                                                 color: Colors.white,
-                                                fontWeight: FontWeight.w700,
-                                                letterSpacing: -0.1,
+                                                fontWeight: FontWeight.w600,
+                                                letterSpacing: 0,
                                               ),
                                         ),
                                       );
@@ -245,9 +245,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                             .textTheme
                                             .headlineSmall
                                             ?.copyWith(
-                                              fontWeight: FontWeight.w900,
+                                              fontWeight: FontWeight.w600,
                                               color: AppColors.textPrimary,
-                                              letterSpacing: -0.4,
+                                              letterSpacing: 0,
                                               height: 1.05,
                                             ),
                                       );
@@ -328,7 +328,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       text: widget.user.name,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const TextSpan(text: ' has '),
@@ -336,14 +336,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       text: 'Been',
                       style: TextStyle(
                         color: AppColors.brandBlue,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -483,9 +483,9 @@ class _ProfileLevelCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.brandBlue,
-                      letterSpacing: -0.1,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),
@@ -598,7 +598,7 @@ class _ProfilePinCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                   const SizedBox(height: 4),
@@ -670,7 +670,7 @@ class _MiniEngagement extends StatelessWidget {
           '$value',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: active ? AppColors.brandBlue : AppColors.textMuted,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
         ),
       ],

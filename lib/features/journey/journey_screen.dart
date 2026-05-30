@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
+import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/level/level_path_screen.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/services/engagement_store.dart';
@@ -158,16 +159,12 @@ class _JourneyScreenState extends State<JourneyScreen> {
                                   text: 'Been',
                                   style: TextStyle(
                                     color: AppColors.brandBlue,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             ),
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.25,
-                            ),
+                            style: context.appTextStyles.screenTitle,
                           ),
                         ),
                         Container(
@@ -184,11 +181,8 @@ class _JourneyScreenState extends State<JourneyScreen> {
                           ),
                           child: Text(
                             '${captures.length} capture${captures.length == 1 ? '' : 's'}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
+                            style: context.appTextStyles.captionText.copyWith(
                               color: AppColors.textSecondary,
-                              letterSpacing: -0.1,
                             ),
                           ),
                         ),
@@ -405,10 +399,7 @@ class _BioEditorSheetState extends State<_BioEditorSheet> {
             children: [
               Text(
                 'About me',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: context.appTextStyles.sectionTitle,
               ),
               SizedBox(height: isLandscape ? AppSpacing.sm : AppSpacing.md),
               TextField(
@@ -494,22 +485,14 @@ class _AvatarPickerSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Choose avatar',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.2,
-                ),
+                style: context.appTextStyles.screenTitle,
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Select one of your captured photos',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+                style: context.appTextStyles.bodyText,
               ),
               SizedBox(height: isLandscape ? AppSpacing.md : AppSpacing.lg),
               Expanded(
@@ -746,14 +729,12 @@ class _ProfileHeader extends StatelessWidget {
                               child: Text(
                                 levelName,
                                 maxLines: 1,
-                                overflow: TextOverflow.visible,
+                                overflow: TextOverflow.ellipsis,
                                 softWrap: false,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
+                                style:
+                                    context.appTextStyles.sectionTitle.copyWith(
                                   color: AppColors.brandBlue,
-                                  letterSpacing: -0.1,
                                 ),
                               ),
                             ),
@@ -779,13 +760,9 @@ class _ProfileHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Camil',
-                    style: TextStyle(
-                      fontSize: 21,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.35,
+                    style: context.appTextStyles.screenTitle.copyWith(
                       height: 1.05,
                     ),
                   ),
@@ -797,9 +774,7 @@ class _ProfileHeader extends StatelessWidget {
                           'Bucharest, Romania',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                          style: context.appTextStyles.bodyText.copyWith(
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -812,7 +787,7 @@ class _ProfileHeader extends StatelessWidget {
                           '\u{1F1F7}\u{1F1F4}',
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontSize: 13,
+                                    fontSize: 14,
                                   ),
                         ),
                       ),
@@ -909,9 +884,9 @@ class _EmptyJourneyState extends StatelessWidget {
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: [
-          DecoratedBox(
+          const DecoratedBox(
             decoration: BoxDecoration(
               color: AppColors.tabActiveBg,
               borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -926,23 +901,17 @@ class _EmptyJourneyState extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Your journey starts on the map',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.2,
-            ),
+            textAlign: TextAlign.center,
+            style: context.appTextStyles.screenTitle,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'Capture your first spot and your polaroids will appear here.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
+            style: context.appTextStyles.bodyText.copyWith(
               height: 1.35,
             ),
           ),

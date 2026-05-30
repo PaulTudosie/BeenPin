@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:been/core/theme/app_colors.dart';
+import 'package:been/core/theme/app_typography.dart';
 
 class PolaroidTile extends StatelessWidget {
   final ImageProvider image;
@@ -71,11 +72,9 @@ class PolaroidTile extends StatelessWidget {
                     spotName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.1,
+                    style: context.appTextStyles.captionText.copyWith(
                       color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -83,20 +82,14 @@ class PolaroidTile extends StatelessWidget {
                     cityCountry,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                    style: context.appTextStyles.captionText.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 1),
                   Text(
                     dateText,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textMuted,
-                    ),
+                    style: context.appTextStyles.captionText,
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -149,9 +142,7 @@ class _EngagementPill extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
+          style: context.appTextStyles.captionText.copyWith(
             color: isActive ? AppColors.brandBlue : AppColors.textMuted,
           ),
         ),

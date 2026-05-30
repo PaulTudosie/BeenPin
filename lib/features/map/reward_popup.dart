@@ -71,7 +71,7 @@ class RewardPopup extends StatelessWidget {
               Text(
                 'You earned a reward!',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                 textAlign: TextAlign.center,
               ),

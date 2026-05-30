@@ -159,8 +159,8 @@ class _RewardSelectionSheetState extends State<RewardSelectionSheet> {
               'You' 've unlocked rewards nearby',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
                   ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -244,7 +244,7 @@ class _RewardSelectionCard extends StatelessWidget {
                       reward.partnerName,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                     ),
                     const SizedBox(height: 6),
@@ -285,7 +285,7 @@ class _RewardSelectionCard extends StatelessWidget {
                           color: reward.selectionBadge == 'Featured'
                               ? AppColors.brandBlue
                               : AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                 ),
@@ -296,7 +296,7 @@ class _RewardSelectionCard extends StatelessWidget {
             reward.gift,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   height: 1.2,
                 ),
           ),
@@ -363,7 +363,7 @@ class _RewardMetaChip extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
           ),
         ],
@@ -416,7 +416,7 @@ class _RewardConfirmationSheet extends StatelessWidget {
               'Reward selected',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -424,7 +424,7 @@ class _RewardConfirmationSheet extends StatelessWidget {
               reward.partnerName,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -487,7 +487,7 @@ class _EmptyRewardsState extends StatelessWidget {
             'No rewards within 500m',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
           ),
           const SizedBox(height: AppSpacing.xs),
