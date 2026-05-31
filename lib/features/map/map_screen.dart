@@ -523,14 +523,16 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           bottom: 20,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: AppColors.surface.withValues(alpha: 0.96),
+              color: AppColors.surface.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.buttonSecondaryBorder),
+              border: Border.all(
+                color: AppColors.buttonSecondaryBorder.withValues(alpha: 0.72),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
@@ -584,13 +586,13 @@ class _SpotSheet extends StatelessWidget {
         margin: EdgeInsets.fromLTRB(16, 0, 16, isLandscape ? 8 : 18),
         constraints: BoxConstraints(maxHeight: maxHeight),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.surface.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(isLandscape ? 24 : 28),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 28,
-              offset: const Offset(0, 10),
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
           ],
         ),

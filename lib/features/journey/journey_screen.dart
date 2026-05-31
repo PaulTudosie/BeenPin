@@ -173,7 +173,9 @@ class _JourneyScreenState extends State<JourneyScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceSoft,
+                            color: AppColors.surfaceSoft.withValues(
+                              alpha: 0.86,
+                            ),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: AppColors.border.withValues(alpha: 0.72),
@@ -604,16 +606,16 @@ class _ProfileHeader extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.89),
+        color: AppColors.surface.withValues(alpha: 0.93),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.68),
+          color: AppColors.border.withValues(alpha: 0.58),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -871,16 +873,16 @@ class _EmptyJourneyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 26, 22, 26),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.97),
+        color: AppColors.surface.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.68),
+          color: AppColors.border.withValues(alpha: 0.58),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 7),
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),

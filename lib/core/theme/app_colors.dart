@@ -22,7 +22,7 @@ class AppColors {
   static const Color border = Color(0xFFE2E8F0);
 
   static const Color tabActive = brandBlue;
-  static const Color tabInactive = Color(0xFF7C8799);
+  static const Color tabInactive = Color(0xFF9CA3AF);
   static const Color tabIndicator = brandBlue;
   static const Color tabActiveBg = Color(0xFFEFF3FF);
 

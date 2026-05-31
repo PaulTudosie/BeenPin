@@ -25,6 +25,21 @@ enum HomeTab {
     }
   }
 
+  String get identityText {
+    switch (this) {
+      case HomeTab.map:
+        return 'Explore. Capture. Enjoy.';
+      case HomeTab.pins:
+        return 'Where others have Been';
+      case HomeTab.journey:
+        return "Places you've Been";
+      case HomeTab.hidden:
+        return 'Beyond the Map';
+      case HomeTab.notifications:
+        return 'Recent Activity';
+    }
+  }
+
   String get assetPath {
     switch (this) {
       case HomeTab.map:
@@ -90,17 +105,17 @@ class SubHeaderTabs extends StatelessWidget {
               height: metrics.barHeight,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.98),
+                  color: AppColors.surface,
                   border: Border(
                     top: BorderSide(
-                      color: AppColors.border.withValues(alpha: 0.82),
+                      color: AppColors.border.withValues(alpha: 0.62),
                     ),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 12,
-                      offset: const Offset(0, -3),
+                      color: Colors.black.withValues(alpha: 0.025),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
                     ),
                   ],
                 ),

@@ -262,13 +262,13 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 48),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Colors.white.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(30),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 12,
-              offset: Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -363,14 +363,14 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.98),
+          color: AppColors.surface.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.72)),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.58)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
             ),
           ],
         ),
@@ -866,9 +866,9 @@ class _EmptyPinsState extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.xl),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.surface.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.58)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

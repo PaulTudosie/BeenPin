@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:been/core/theme/app_colors.dart';
+import 'package:been/core/theme/app_spacing.dart';
 import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/hidden/hidden_spots_screen.dart';
 import 'package:been/features/journey/journey_screen.dart';
@@ -51,90 +52,19 @@ class _HomeShellState extends State<HomeShell> {
 
   int get _currentIndex => HomeTab.values.indexOf(_currentTab);
 
-  void _showMainMenu() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        final mediaQuery = MediaQuery.of(context);
-        final isLandscape = mediaQuery.orientation == Orientation.landscape;
-        final maxHeight = mediaQuery.size.height * (isLandscape ? 0.68 : 0.9);
+  void _onHeaderMenuAction(HeaderMenuAction action) {
+    final content = _HeaderMenuContent.forAction(action);
 
-        return SafeArea(
-          top: false,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                isLandscape ? 8 : 12,
-                20,
-                20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  SizedBox(height: isLandscape ? 8 : 14),
-                  _MenuRow(
-                    icon: Icons.person_outline_rounded,
-                    title: 'Account',
-                    subtitle: 'Profile, follows, rewards, and settings',
-                    onTap: () => _openMenuDialog(
-                      context,
-                      title: 'Account',
-                      body:
-                          'Account controls will include profile editing, follow history, rewards, and sign-in options.',
-                    ),
-                  ),
-                  _MenuRow(
-                    icon: Icons.mail_outline_rounded,
-                    title: 'Contact',
-                    subtitle: 'Partner, support, and feedback contact',
-                    onTap: () => _openMenuDialog(
-                      context,
-                      title: 'Contact',
-                      body:
-                          'For the pilot demo, this can point partners and early users to contact@beenpin.app.',
-                    ),
-                  ),
-                  _MenuRow(
-                    icon: Icons.info_outline_rounded,
-                    title: 'About BeenPin',
-                    subtitle: 'What the app does and why it exists',
-                    onTap: () => _openMenuDialog(
-                      context,
-                      title: 'About BeenPin',
-                      body:
-                          'BeenPin is an exploration photo game for discovering city pins, proving visits, and unlocking same-day local rewards.',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    _openMenuDialog(
+      title: content.title,
+      body: content.body,
     );
   }
 
-  void _openMenuDialog(
-    BuildContext sheetContext, {
+  void _openMenuDialog({
     required String title,
     required String body,
   }) {
-    Navigator.of(sheetContext).pop();
     showDialog<void>(
       context: context,
       builder: (context) {
@@ -261,8 +191,9 @@ class _HomeShellState extends State<HomeShell> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          TopHeader(
-            onMenuTap: _showMainMenu,
+          _HeaderZone(
+            identityText: _currentTab.identityText,
+            onMenuAction: _onHeaderMenuAction,
           ),
           Expanded(
             child: IndexedStack(
@@ -277,6 +208,126 @@ class _HomeShellState extends State<HomeShell> {
         onTabSelected: _onTabSelected,
       ),
     );
+  }
+}
+
+class _HeaderZone extends StatelessWidget {
+  final String identityText;
+  final ValueChanged<HeaderMenuAction> onMenuAction;
+
+  const _HeaderZone({
+    required this.identityText,
+    required this.onMenuAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.48),
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TopHeader(
+            onMenuAction: onMenuAction,
+          ),
+          _ScreenIdentityRow(text: identityText),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScreenIdentityRow extends StatelessWidget {
+  final String text;
+
+  const _ScreenIdentityRow({
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    return SizedBox(
+      height: isLandscape ? 25 : 29,
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: isLandscape ? 4 : 6,
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+        ),
+        child: Center(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: AppTypography.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6B7280),
+              letterSpacing: 0,
+              height: 1,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderMenuContent {
+  final String title;
+  final String body;
+
+  const _HeaderMenuContent({
+    required this.title,
+    required this.body,
+  });
+
+  factory _HeaderMenuContent.forAction(HeaderMenuAction action) {
+    switch (action) {
+      case HeaderMenuAction.account:
+        return const _HeaderMenuContent(
+          title: 'Account',
+          body:
+              'Account controls will include profile editing, follow history, rewards, and sign-in options.',
+        );
+      case HeaderMenuAction.partnerAccount:
+        return const _HeaderMenuContent(
+          title: 'Partner Account',
+          body:
+              'Partner login and campaign tools will be connected here when the partner portal is ready.',
+        );
+      case HeaderMenuAction.contact:
+        return const _HeaderMenuContent(
+          title: 'Contact',
+          body:
+              'For the pilot demo, this can point partners and early users to contact@beenpin.app.',
+        );
+      case HeaderMenuAction.aboutBeenPin:
+        return const _HeaderMenuContent(
+          title: 'About BeenPin',
+          body:
+              'BeenPin is an exploration photo game for discovering city pins, proving visits, and unlocking same-day local rewards.',
+        );
+    }
   }
 }
 
@@ -311,54 +362,6 @@ class _HiddenScanRow extends StatelessWidget {
       ),
       subtitle: Text(
         spot.clue,
-        style: context.appTextStyles.captionText.copyWith(
-          color: AppColors.textSecondary,
-        ),
-      ),
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        color: AppColors.textMuted,
-      ),
-      onTap: onTap,
-    );
-  }
-}
-
-class _MenuRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _MenuRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: AppColors.tabActiveBg,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(
-          icon,
-          color: AppColors.brandBlue,
-        ),
-      ),
-      title: Text(
-        title,
-        style: context.appTextStyles.sectionTitle,
-      ),
-      subtitle: Text(
-        subtitle,
         style: context.appTextStyles.captionText.copyWith(
           color: AppColors.textSecondary,
         ),

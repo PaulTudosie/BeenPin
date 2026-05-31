@@ -65,10 +65,10 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: AppColors.surface.withValues(alpha: 0.94),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.border,
+                        color: AppColors.border.withValues(alpha: 0.58),
                       ),
                     ),
                     child: Column(
@@ -129,10 +129,10 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(AppSpacing.xl),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: AppColors.surface.withValues(alpha: 0.94),
                         borderRadius: BorderRadius.circular(22),
                         border: Border.all(
-                          color: AppColors.border,
+                          color: AppColors.border.withValues(alpha: 0.58),
                         ),
                       ),
                       child: Column(
@@ -182,10 +182,10 @@ class _HiddenSpotsScreenState extends State<HiddenSpotsScreen> {
 
                         return Container(
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: AppColors.surface.withValues(alpha: 0.94),
                             borderRadius: BorderRadius.circular(22),
                             border: Border.all(
-                              color: AppColors.border,
+                              color: AppColors.border.withValues(alpha: 0.58),
                             ),
                           ),
                           padding: const EdgeInsets.all(AppSpacing.md),

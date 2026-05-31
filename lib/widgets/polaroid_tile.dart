@@ -30,13 +30,13 @@ class PolaroidTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.surface.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(10),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(2, 4),
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             ),
           ],
         ),

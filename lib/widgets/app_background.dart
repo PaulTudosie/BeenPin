@@ -35,7 +35,7 @@ class AppBackground extends StatelessWidget {
         ),
         Positioned.fill(
           child: Opacity(
-            opacity: 0.22,
+            opacity: 0.12,
             child: Image.asset(
               'assets/backgrounds/bg_minimal.png',
               fit: BoxFit.cover,
@@ -44,7 +44,7 @@ class AppBackground extends StatelessWidget {
         ),
         Positioned.fill(
           child: Container(
-            color: Colors.white.withValues(alpha: 0.07),
+            color: Colors.white.withValues(alpha: 0.12),
           ),
         ),
         const Positioned.fill(

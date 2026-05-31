@@ -211,16 +211,16 @@ class _NotificationsHeader extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.97),
+        color: AppColors.surface.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.68),
+          color: AppColors.border.withValues(alpha: 0.58),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 7),
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -323,16 +323,16 @@ class _NotificationSectionCard extends StatelessWidget {
           ),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.surface.withValues(alpha: 0.99),
+              color: AppColors.surface.withValues(alpha: 0.94),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: AppColors.border.withValues(alpha: 0.68),
+                color: AppColors.border.withValues(alpha: 0.58),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.035),
-                  blurRadius: 16,
-                  offset: const Offset(0, 7),
+                  color: Colors.black.withValues(alpha: 0.025),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -589,16 +589,16 @@ class _EmptyNotificationsState extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(22, 26, 22, 26),
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.97),
+            color: AppColors.surface.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
-              color: AppColors.border.withValues(alpha: 0.68),
+              color: AppColors.border.withValues(alpha: 0.58),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 16,
-                offset: const Offset(0, 7),
+                color: Colors.black.withValues(alpha: 0.025),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
