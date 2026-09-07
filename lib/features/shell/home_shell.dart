@@ -7,6 +7,7 @@ import 'package:been/features/journey/journey_screen.dart';
 import 'package:been/features/map/map_screen.dart';
 import 'package:been/features/pins/pins_screen.dart';
 import 'package:been/features/notifications/notifications_screen.dart';
+import 'package:been/features/reward/my_rewards_screen.dart';
 import 'package:been/models/hidden_spot.dart';
 import 'package:been/services/hidden_capture_store.dart';
 import 'package:been/services/hidden_spot_service.dart';
@@ -53,6 +54,12 @@ class _HomeShellState extends State<HomeShell> {
   int get _currentIndex => HomeTab.values.indexOf(_currentTab);
 
   void _onHeaderMenuAction(HeaderMenuAction action) {
+    if (action == HeaderMenuAction.myRewards) {
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => const MyRewardsScreen(),
+      ));
+      return;
+    }
     final content = _HeaderMenuContent.forAction(action);
 
     _openMenuDialog(
@@ -303,6 +310,8 @@ class _HeaderMenuContent {
 
   factory _HeaderMenuContent.forAction(HeaderMenuAction action) {
     switch (action) {
+      case HeaderMenuAction.myRewards:
+        throw StateError('My Rewards opens its own screen.');
       case HeaderMenuAction.account:
         return const _HeaderMenuContent(
           title: 'Account',

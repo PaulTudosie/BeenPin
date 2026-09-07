@@ -105,16 +105,24 @@ class _RewardSelectionSheetState extends State<RewardSelectionSheet> {
       _selectedPartnerId = reward.partnerId;
     });
 
-    await RewardSelectionStore.saveSelectedReward(
-      proofId: widget.proofId,
-      reward: reward,
-    );
-
-    if (!mounted) {
-      return;
+    try {
+      final saved = await RewardSelectionStore.saveSelectedReward(
+        proofId: widget.proofId,
+        reward: reward,
+        sourceSpotId: widget.spot.id,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(saved.reward);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _selectedPartnerId = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Could not save this reward. Please try again.'),
+      ));
     }
-
-    Navigator.of(context).pop(reward);
   }
 
   @override

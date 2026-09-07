@@ -8,6 +8,7 @@ import 'package:been/core/theme/app_spacing.dart';
 import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/level/level_path_screen.dart';
 import 'package:been/services/capture_store.dart';
+import 'package:been/services/current_user_profile.dart';
 import 'package:been/services/engagement_store.dart';
 import 'package:been/widgets/polaroid_tile.dart';
 
@@ -763,7 +764,7 @@ class _ProfileHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Camil',
+                    CurrentUserProfile.user.name,
                     style: context.appTextStyles.screenTitle.copyWith(
                       height: 1.05,
                     ),
@@ -773,7 +774,7 @@ class _ProfileHeader extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'Bucharest, Romania',
+                          CurrentUserProfile.user.city,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: context.appTextStyles.bodyText.copyWith(

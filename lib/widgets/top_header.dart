@@ -6,9 +6,11 @@ import 'package:been/core/theme/app_radii.dart';
 import 'package:been/core/theme/app_spacing.dart';
 import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/search/app_search_delegate.dart';
+import 'package:been/features/partner/partner_mode_screen.dart';
 
 enum HeaderMenuAction {
   account,
+  myRewards,
   partnerAccount,
   contact,
   aboutBeenPin,
@@ -123,7 +125,14 @@ class _TopHeaderState extends State<TopHeader> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                const _BrandTitle(),
+                GestureDetector(
+                  onLongPress: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PartnerModeScreen(),
+                    ),
+                  ),
+                  child: const _BrandTitle(),
+                ),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: _SearchIconButton(
@@ -355,6 +364,10 @@ class _HeaderMenuButton extends StatelessWidget {
           _buildHeaderMenuItem(
             value: HeaderMenuAction.account,
             label: 'Account',
+          ),
+          _buildHeaderMenuItem(
+            value: HeaderMenuAction.myRewards,
+            label: 'My Rewards',
           ),
           _buildHeaderMenuItem(
             value: HeaderMenuAction.partnerAccount,

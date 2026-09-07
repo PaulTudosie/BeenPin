@@ -69,7 +69,7 @@ class _PinsScreenState extends State<PinsScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, i) => _PolaroidFeedCard(
                       record: captures[i],
-                      user: MockSocialService.userForCapture(captures[i], i),
+                      user: captures[i].author,
                       allCaptures: captures,
                     ),
                     childCount: captures.length,
@@ -411,22 +411,34 @@ class _PolaroidFeedCardState extends State<_PolaroidFeedCard> {
                         decoration: BoxDecoration(
                           color: AppColors.avatarBg,
                           shape: BoxShape.circle,
+                          image: widget.user.avatarPath != null &&
+                                  File(widget.user.avatarPath!).existsSync()
+                              ? DecorationImage(
+                                  image: FileImage(
+                                    File(widget.user.avatarPath!),
+                                  ),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                           border: Border.all(
                             color: AppColors.brandBlue.withValues(alpha: 0.12),
                           ),
                         ),
-                        child: Center(
-                          child: Text(
-                            widget.user.name.substring(0, 1),
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelLarge
-                                ?.copyWith(
-                                  color: AppColors.brandBlue,
-                                  fontWeight: FontWeight.w600,
+                        child: widget.user.avatarPath != null &&
+                                File(widget.user.avatarPath!).existsSync()
+                            ? null
+                            : Center(
+                                child: Text(
+                                  widget.user.name.substring(0, 1),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelLarge
+                                      ?.copyWith(
+                                        color: AppColors.brandBlue,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
-                          ),
-                        ),
+                              ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(

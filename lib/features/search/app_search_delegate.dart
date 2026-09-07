@@ -143,10 +143,7 @@ class _SearchResults extends StatelessWidget {
             if (pins.isNotEmpty) ...[
               const _SectionLabel(title: 'Pins'),
               ...pins.map((record) {
-                final assignedUser = MockSocialService.userForCapture(
-                  record,
-                  captures.indexOf(record),
-                );
+                final assignedUser = record.author;
 
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -191,7 +188,7 @@ class _SearchResults extends StatelessWidget {
 
     return captures.where((capture) {
       final assignedUser =
-          MockSocialService.userForCapture(capture, captures.indexOf(capture));
+          capture.author;
       return capture.spotName.toLowerCase().contains(query) ||
           capture.spotType.toLowerCase().contains(query) ||
           assignedUser.name.toLowerCase().contains(query) ||

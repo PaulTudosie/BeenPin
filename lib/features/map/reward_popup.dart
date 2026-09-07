@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:been/models/reward.dart';
+import 'package:been/models/user_reward.dart';
+import 'package:been/services/reward_selection_store.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class RewardPopup extends StatelessWidget {
+class RewardPopup extends StatefulWidget {
   final Reward reward;
 
   const RewardPopup({super.key, required this.reward});
@@ -29,7 +33,86 @@ class RewardPopup extends StatelessWidget {
   }
 
   @override
+  State<RewardPopup> createState() => _RewardPopupState();
+}
+
+class _RewardPopupState extends State<RewardPopup> with WidgetsBindingObserver {
+  UserReward? _saved;
+  bool _loading = true;
+  Timer? _expiryTimer;
+  Reward get reward => _saved?.reward ?? widget.reward;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    RewardSelectionStore.selectedRewardsVersion.addListener(_refresh);
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    _expiryTimer?.cancel();
+    if (mounted) setState(() => _loading = true);
+    UserReward? saved;
+    try {
+      final proofId = widget.reward.proofId;
+      if (proofId != null) {
+        saved = await RewardSelectionStore.findRewardByProofId(proofId);
+      }
+    } catch (_) {
+      // A QR must not be redeemable when its saved state cannot be verified.
+    }
+    if (!mounted) return;
+    setState(() {
+      _saved = saved;
+      _loading = false;
+    });
+    if (saved?.statusAt(DateTime.now()) == UserRewardStatus.active) {
+      // Only runs while this QR is visible; no background expiry job is needed.
+      _expiryTimer = Timer(
+          saved!.validUntil.difference(DateTime.now()) +
+              const Duration(milliseconds: 1),
+          _refresh);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refresh();
+    } else {
+      _expiryTimer?.cancel();
+      if (mounted) setState(() => _loading = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _expiryTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    RewardSelectionStore.selectedRewardsVersion.removeListener(_refresh);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    final status = _saved?.statusAt(DateTime.now());
+    if (status != UserRewardStatus.active) {
+      return AlertDialog(
+        title: Text(status == UserRewardStatus.redeemed
+            ? 'Redeemed'
+            : status == UserRewardStatus.expired
+                ? 'Expired'
+                : 'Reward unavailable'),
+        content: const Text('This reward cannot be redeemed.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'))
+        ],
+      );
+    }
     final scheme = Theme.of(context).colorScheme;
 
     return Center(

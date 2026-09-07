@@ -28,6 +28,7 @@ class RewardRedemption {
 
 class RewardRedemptionStore {
   static const _redemptionsKey = 'reward_redemptions';
+  static Future<void>? _pending;
 
   static Future<RewardRedemption?> getRedemption(String proofId) async {
     final redemptions = await _getRedemptions();
@@ -38,7 +39,19 @@ class RewardRedemptionStore {
     return getRedemption(proofId).then((value) => value != null);
   }
 
-  static Future<RewardRedemption> redeem(String proofId) async {
+  static Future<RewardRedemption> redeem(String proofId) {
+    final previous = _pending;
+    final next = previous == null
+        ? _redeem(proofId)
+        : previous.then((_) => _redeem(proofId));
+    final gate = next.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    _pending = gate;
+    return next.whenComplete(() {
+      if (identical(_pending, gate)) _pending = null;
+    });
+  }
+
+  static Future<RewardRedemption> _redeem(String proofId) async {
     final redemptions = await _getRedemptions();
     final existing = redemptions[proofId];
     if (existing != null) return existing;
@@ -59,16 +72,27 @@ class RewardRedemptionStore {
 
     final decoded = jsonDecode(raw);
     if (decoded is! Map<String, dynamic>) {
-      return <String, RewardRedemption>{};
+      throw const FormatException('Unreadable redemption ledger');
     }
 
     return decoded.map((key, value) {
-      return MapEntry(
-        key,
-        RewardRedemption.fromJson(value as Map<String, dynamic>),
-      );
+      try {
+        return MapEntry(
+            key, RewardRedemption.fromJson(value as Map<String, dynamic>));
+      } on FormatException {
+        return MapEntry(key, _unknownRedemption(key));
+      } on TypeError {
+        return MapEntry(key, _unknownRedemption(key));
+      }
     });
   }
+
+  // An existing ledger entry must not become reusable if its date is damaged.
+  static RewardRedemption _unknownRedemption(String proofId) =>
+      RewardRedemption(
+        proofId: proofId,
+        redeemedAt: DateTime.fromMillisecondsSinceEpoch(0),
+      );
 
   static Future<void> _saveRedemptions(
     Map<String, RewardRedemption> redemptions,
@@ -77,6 +101,8 @@ class RewardRedemptionStore {
     final encoded = redemptions.map(
       (key, value) => MapEntry(key, value.toJson()),
     );
-    await prefs.setString(_redemptionsKey, jsonEncode(encoded));
+    if (!await prefs.setString(_redemptionsKey, jsonEncode(encoded))) {
+      throw StateError('Could not save redemption. Please try again.');
+    }
   }
 }

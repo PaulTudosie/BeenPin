@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/services/spot_service.dart';
+import 'package:been/models/social_user.dart';
+import 'package:been/services/current_user_profile.dart';
 
 class CaptureRecord {
+  final SocialUser author;
   final String spotId;
   final String spotName;
   final String spotType;
@@ -16,6 +19,7 @@ class CaptureRecord {
   final String? proofId;
 
   const CaptureRecord({
+    required this.author,
     required this.spotId,
     required this.spotName,
     required this.spotType,
@@ -29,6 +33,7 @@ class CaptureRecord {
 
   Map<String, dynamic> toJson() {
     return {
+      'author': author.toJson(),
       'spotId': spotId,
       'spotName': spotName,
       'spotType': spotType,
@@ -49,6 +54,9 @@ class CaptureRecord {
         : SpotService.resolveSpotId(spotName: spotName) ?? spotName;
 
     return CaptureRecord(
+      author: json['author'] == null
+          ? CurrentUserProfile.user
+          : SocialUser.fromJson(json['author'] as Map<String, dynamic>),
       spotId: spotId,
       spotName: spotName,
       spotType: json['spotType'] as String? ?? '',
@@ -89,11 +97,25 @@ class CaptureStore {
   static Future<List<CaptureRecord>> getCaptures() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_capturesKey) ?? <String>[];
-
-    final items = raw
-        .map((e) =>
-            CaptureRecord.fromJson(jsonDecode(e) as Map<String, dynamic>))
-        .toList();
+    var migrated = false;
+    final items = raw.map((value) {
+      final json = jsonDecode(value) as Map<String, dynamic>;
+      // Before authors were stored, every record was a local Journey capture.
+      // Persist the backfill so future profile changes cannot reassign ownership.
+      if (json['author'] == null) {
+        json['author'] = CurrentUserProfile.snapshot(
+          avatarPath: prefs.getString(_avatarPathKey),
+        ).toJson();
+        migrated = true;
+      }
+      return CaptureRecord.fromJson(json);
+    }).toList();
+    if (migrated) {
+      await prefs.setStringList(
+        _capturesKey,
+        items.map((item) => jsonEncode(item.toJson())).toList(),
+      );
+    }
 
     items.sort((a, b) => b.capturedAt.compareTo(a.capturedAt));
     return items;
@@ -108,16 +130,15 @@ class CaptureStore {
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
-    final existingRaw = prefs.getStringList(_capturesKey) ?? <String>[];
-    final existing = existingRaw
-        .map((e) =>
-            CaptureRecord.fromJson(jsonDecode(e) as Map<String, dynamic>))
-        .toList();
+    final existing = await getCaptures();
 
     existing.removeWhere((item) => item.spotId == spot.id);
 
     final capturedAt = DateTime.now();
     final newItem = CaptureRecord(
+      author: CurrentUserProfile.snapshot(
+        avatarPath: prefs.getString(_avatarPathKey),
+      ),
       spotId: spot.id,
       spotName: spot.name,
       spotType: spot.type,

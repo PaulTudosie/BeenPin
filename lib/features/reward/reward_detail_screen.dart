@@ -4,6 +4,8 @@ import 'package:been/models/reward.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/features/map/reward_popup.dart';
 import 'package:been/services/reward_redemption_store.dart';
+import 'package:been/models/user_reward.dart';
+import 'package:been/services/reward_selection_store.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RewardDetailScreen extends StatefulWidget {
@@ -18,21 +20,47 @@ class RewardDetailScreen extends StatefulWidget {
   State<RewardDetailScreen> createState() => _RewardDetailScreenState();
 }
 
-class _RewardDetailScreenState extends State<RewardDetailScreen> {
-  late Future<RewardRedemption?> _redemptionFuture;
+class _RewardDetailScreenState extends State<RewardDetailScreen>
+    with WidgetsBindingObserver {
+  late Future<UserReward?> _rewardFuture;
+  UserReward? _storedReward;
 
-  Reward get reward => widget.reward;
+  Reward get reward => _storedReward?.reward ?? widget.reward;
 
   @override
   void initState() {
     super.initState();
-    _redemptionFuture = _loadRedemption();
+    WidgetsBinding.instance.addObserver(this);
+    RewardSelectionStore.selectedRewardsVersion.addListener(_reload);
+    _rewardFuture = _loadReward();
   }
 
-  Future<RewardRedemption?> _loadRedemption() {
+  Future<UserReward?> _loadReward() async {
     final proofId = reward.proofId;
-    if (proofId == null) return Future.value();
-    return RewardRedemptionStore.getRedemption(proofId);
+    if (proofId == null) return null;
+    final saved = await RewardSelectionStore.findRewardByProofId(proofId);
+    _storedReward = saved;
+    return saved;
+  }
+
+  void _reload() {
+    if (mounted) {
+      setState(() {
+        _rewardFuture = _loadReward();
+      });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _reload();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    RewardSelectionStore.selectedRewardsVersion.removeListener(_reload);
+    super.dispose();
   }
 
   Future<void> _openPartnerUrl() async {
@@ -53,46 +81,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
 
   Future<void> _showQr(BuildContext context) async {
     await RewardPopup.show(context, reward);
-  }
-
-  Future<void> _markRedeemed() async {
-    final proofId = reward.proofId;
-    if (proofId == null) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: const Text('Mark reward as redeemed?'),
-          content: Text(
-            'This simulates the partner staff scanner for the pilot. Proof ID $proofId will become one-use on this demo device.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Mark redeemed'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true) return;
-
-    await RewardRedemptionStore.redeem(proofId);
-    if (!mounted) return;
-
-    setState(() {
-      _redemptionFuture = _loadRedemption();
-    });
+    _reload();
   }
 
   @override
@@ -101,11 +90,23 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
     final capturedAt = reward.capturedAt;
     final distanceMeters = reward.distanceMeters;
 
-    return FutureBuilder<RewardRedemption?>(
-      future: _redemptionFuture,
+    return FutureBuilder<UserReward?>(
+      future: _rewardFuture,
       builder: (context, snapshot) {
-        final redemption = snapshot.data;
-        final isRedeemed = redemption != null;
+        final saved = snapshot.data;
+        final status = saved?.statusAt(DateTime.now());
+        final isRedeemed = status == UserRewardStatus.redeemed;
+        final isExpired = status == UserRewardStatus.expired;
+        final canRedeem = snapshot.connectionState == ConnectionState.done &&
+            !snapshot.hasError &&
+            status == UserRewardStatus.active;
+
+        final redemption = saved?.redeemedAt == null
+            ? null
+            : RewardRedemption(
+                proofId: saved!.proofId,
+                redeemedAt: saved.redeemedAt!,
+              );
 
         return Scaffold(
           backgroundColor: const Color(0xFFF7F8FA),
@@ -130,13 +131,24 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (isExpired || isRedeemed && redemption == null) ...[
+                    Text(isExpired ? 'Expired' : 'Redeemed',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 16),
+                  ],
+                  if (snapshot.hasError ||
+                      snapshot.connectionState == ConnectionState.done &&
+                          saved == null)
+                    TextButton(
+                        onPressed: _reload,
+                        child: const Text('Reward unavailable. Tap to retry.')),
                   _PartnerHeader(
                     partnerName: reward.partnerName,
                     partnerCategory: reward.partnerCategory,
                     badge: reward.selectionBadge,
                   ),
                   const SizedBox(height: 20),
-                  if (isRedeemed) ...[
+                  if (redemption != null) ...[
                     _RedeemedStatusCard(redemption: redemption),
                     const SizedBox(height: 16),
                   ],
@@ -217,7 +229,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
                         _InfoLine(
                           label: 'Valid',
                           value:
-                              'Today until ${reward.expiryTimeLabel} - ${reward.expiryDate}',
+                              'Until ${reward.expiryTimeLabel} - ${reward.expiryDate}',
                         ),
                         const SizedBox(height: 10),
                         _InfoLine(
@@ -275,37 +287,23 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: isRedeemed ? null : () => _showQr(context),
+                      onPressed: canRedeem ? () => _showQr(context) : null,
                       icon: Icon(
                         isRedeemed
                             ? Icons.check_circle_rounded
                             : Icons.qr_code_rounded,
                       ),
-                      label:
-                          Text(isRedeemed ? 'Already redeemed' : 'Reveal QR'),
+                      label: Text(isRedeemed
+                          ? 'Already redeemed'
+                          : isExpired
+                              ? 'Expired'
+                              : 'Reveal QR'),
                       style: FilledButton.styleFrom(
                         backgroundColor: isRedeemed
                             ? AppColors.textMuted
                             : AppColors.brandGreen,
                         foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: isRedeemed ? null : _markRedeemed,
-                      icon: const Icon(Icons.verified_rounded),
-                      label: const Text('Partner demo: mark redeemed'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52),
-                        foregroundColor: AppColors.textPrimary,
-                        side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),

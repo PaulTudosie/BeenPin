@@ -16,4 +16,24 @@ class SocialUser {
     required this.avatarPath,
     required this.tagline,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'city': city,
+        'levelName': levelName,
+        'handle': handle,
+        'avatarPath': avatarPath,
+        'tagline': tagline,
+      };
+
+  factory SocialUser.fromJson(Map<String, dynamic> json) => SocialUser(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        city: json['city'] as String? ?? '',
+        levelName: json['levelName'] as String? ?? '',
+        handle: json['handle'] as String? ?? '',
+        avatarPath: json['avatarPath'] as String?,
+        tagline: json['tagline'] as String? ?? '',
+      );
 }
