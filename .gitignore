@@ -50,3 +50,6 @@ app.*.map.json
 linux/flutter/generated_plugin_registrant.*
 macos/Flutter/GeneratedPluginRegistrant.swift
 windows/flutter/generated_plugin_registrant.*
+
+# Local Supabase configuration
+/config/supabase.local.json
