@@ -3,11 +3,14 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:been/models/spot.dart';
+import 'package:been/services/capture_draft.dart';
+import 'package:been/services/capture_repository.dart';
 
 class CaptureScreen extends StatefulWidget {
   final Spot spot;
+  final CaptureDraft draft;
 
-  const CaptureScreen({super.key, required this.spot});
+  const CaptureScreen({super.key, required this.spot, required this.draft});
 
   @override
   State<CaptureScreen> createState() => _CaptureScreenState();
@@ -17,11 +20,14 @@ class _CaptureScreenState extends State<CaptureScreen> {
   CameraController? _controller;
   Future<void>? _initFuture;
   String? _capturedPath;
+  bool _saving = false;
+  String? _saveError;
 
   @override
   void initState() {
     super.initState();
-    _init();
+    _capturedPath = widget.draft.imagePath;
+    if (_capturedPath == null) _init();
   }
 
   Future<void> _init() async {
@@ -64,46 +70,80 @@ class _CaptureScreenState extends State<CaptureScreen> {
     setState(() => _capturedPath = null);
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
+    if (_saving) return;
     final path = _capturedPath;
-    Navigator.of(context).pop(path);
+    if (path == null) return;
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      final result = await widget.draft.submit(path);
+      if (mounted) Navigator.of(context).pop(result);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _saveError = CaptureException.fromError(error).message);
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_capturedPath != null) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.file(
-              File(_capturedPath!),
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: Colors.black),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 48,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _RoundButton(
-                    icon: Icons.refresh_rounded,
-                    label: 'Retake',
-                    onTap: _retake,
-                  ),
-                  _RoundButton(
-                    icon: Icons.check_rounded,
-                    label: 'Been ✅',
-                    onTap: _confirm,
-                    primary: true,
-                  ),
-                ],
+      return PopScope(
+        canPop: !_saving,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.file(
+                File(_capturedPath!),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.black),
               ),
-            ),
-          ],
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 48,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _RoundButton(
+                      icon: Icons.refresh_rounded,
+                      label: 'Retake',
+                      onTap: _saving || widget.draft.started ? null : _retake,
+                    ),
+                    _RoundButton(
+                      icon: Icons.check_rounded,
+                      label: _saving
+                          ? 'Saving…'
+                          : _saveError != null
+                              ? 'Retry Been'
+                              : 'Been ✅',
+                      onTap: _saving ? null : _confirm,
+                      primary: true,
+                    ),
+                  ],
+                ),
+              ),
+              if (_saving) const Center(child: CircularProgressIndicator()),
+              if (_saveError != null)
+                Positioned(
+                  left: 20,
+                  right: 20,
+                  bottom: 158,
+                  child: Text(_saveError!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          backgroundColor: Colors.black87)),
+                ),
+            ],
+          ),
         ),
       );
     }
@@ -163,7 +203,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
 class _RoundButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool primary;
 
   const _RoundButton({

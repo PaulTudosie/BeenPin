@@ -1,8 +1,8 @@
 # BeenPin captures database foundation
 
-Prepared 2026-09-15. **SQL artifact only: not executed.** Manually run `supabase/captures_schema.sql` as the trusted `postgres` administrator in Supabase SQL Editor after review, preferably against the development project first. The file wraps deployment in a transaction and finishes with read-only metadata verification queries. It does not connect to Supabase automatically.
+Prepared 2026-09-15. The SQL foundation was originally supplied without execution. The subsequent Flutter integration task confirms that this schema and RPC are now deployed and working; no SQL was executed during the integration. `supabase/captures_schema.sql` remains the manual deployment artifact for another environment, not an app startup script. It wraps deployment in a transaction and finishes with read-only metadata verification queries.
 
-This implementation follows the fixed product decisions supplied after `captures_audit.md`; that earlier document remains the historical audit. In particular, this stage uses the smaller schema, mandatory proof coordinates, Auth-user deletion cascade, server timestamps, and no import fields. No Flutter, spots, profiles, local capture, rewards/QR, Partner Mode or Hidden behavior changes.
+The SQL foundation follows the fixed product decisions supplied after `captures_audit.md`; that earlier document remains the historical audit. It uses the smaller schema, mandatory proof coordinates, Auth-user deletion cascade, server timestamps, and no import fields. Its original delivery made no Flutter or local-data changes. The Flutter integration below now changes new capture creation, Map capture ownership and the local sources for Journey/Pins/search. Spots, profiles, rewards/QR, Partner Mode and Hidden implementations remain unchanged.
 
 ## Schema
 
@@ -133,3 +133,63 @@ Metadata inspection is not runtime validation. Before Flutter integration, manua
 | Spot renamed after capture | Existing capture snapshots unchanged |
 
 No runtime tests or SQL execution were performed in this task, including these write-producing acceptance scenarios. Validation performed locally: static SQL/security/concurrency review, `git diff --check`, and whitespace checks on both new files. Flutter formatting, analysis and tests are unrelated to these SQL/documentation changes and were not run.
+
+## Flutter integration: remote authority and local compatibility
+
+The SQL-only validation statement above is historical. The current Flutter implementation adds:
+
+- `RemoteCapture`: strict parsing of the seven returned fields; UUIDs remain strings, timestamp must include timezone, and distance must be finite/nonnegative. No geography field is exposed by this model.
+- `CaptureRepository` / `SupabaseCaptureRepository`: `createCapture` calls only `public.create_capture`; `getOwnCaptures` selects a paginated, ordered projection from `public.captures`, aliasing stored snapshot names to the RPC response names. RLS filters reads. Owner identity is checked before and after awaits; account changes discard stale results. No UI widget calls Supabase directly.
+- `CaptureState`: Map's in-memory, user-scoped remote spot UUID set. It clears on owner changes, ignores stale load generations and late responses, and maps UUID membership back through each loaded `Spot.remoteId` to its unchanged marker/local ID. It never reads `captured_spot_ids`. Loading/failure displays a neutral loading/retry surface instead of incorrectly presenting unknown capture state as uncaptured.
+- `CaptureDraft`: one attempt containing the initiating AppProfile, remote Spot, existing GPS sample, UUID and chosen photo. Camera confirmation awaits remote acceptance, then local compatibility persistence. Only a completion containing a persisted local record proceeds to the existing reward selection UI.
+
+The Dart RPC payload contains exactly `p_spot_id`, `p_latitude`, `p_longitude`, `p_client_capture_id`. It contains no owner, timestamp, distance, snapshot names or photo path. A remote spot UUID is required; local IDs `1`–`15` are never substituted. The SDK APIs used are documented in [Dart RPC](https://supabase.com/docs/reference/dart/rpc) and [Dart SELECT](https://supabase.com/docs/reference/dart/select).
+
+### Confirmation, retry and failure behavior
+
+“Been” shows a saving indicator, disables duplicate taps and prevents back navigation during the request. One UUID v4 is generated from Dart's secure random source when the draft is created (no added UUID package). Duplicate calls share an in-flight Future. Network errors/timeouts retain the draft's UUID, photo and coordinates; Retry Been resubmits the same attempt. Retake is disabled once submission starts because an ambiguous request may already have committed. A preview recreated with the same draft restores its original image path. Closing the screen discards the in-memory draft; no background retry queue or process-death draft restoration is implemented.
+
+After server acceptance, Map's remote state updates immediately, before the local write, so even a local disk failure cannot make an accepted capture appear uncaptured. The accepted response remains in the draft: retrying a failed local save uses it without another RPC. No reward selection opens until local persistence succeeds. Returning/cancelling refreshes remote state, and app resume reloads it. Each AuthGate account subtree gets new Map state; no previous user's marker cache is reused.
+
+All backend tokens map to friendly errors: not_authenticated asks the user to sign in again through the existing account flow; invalid_client_capture_id asks for a new attempt; invalid_coordinates asks for a new location sample; spot_unavailable, already_captured and outside_capture_radius have specific messages; capture_retry_required and unknown/network errors offer retry. No raw Postgrest/database text is shown. Authentication routing architecture is unchanged.
+
+For `already_captured`, the draft fetches own remote captures, finds the spot UUID and updates Map. It returns a reconciliation completion with no local photo/proof record and skips reward selection. Missing local history after reinstall/another-device capture cannot be reconstructed before Storage; the newly photographed image is not falsely attached to an older capture. A normal same-draft idempotent success, by contrast, retains its own selected image and creates local compatibility data once.
+
+The existing location permission/sample logic and cached fallback remain. The existing 10,000 m client testing gate is unchanged; the backend still makes the authoritative radius/distance decision. New compatibility records use the server's distance and capture instant (converted to local time for existing display and reward day formatting). No fake 0/0 fallback is introduced.
+
+### Storage keys and account isolation
+
+| Data | Current integration key/source |
+| --- | --- |
+| New compatibility captures | `capture_records_v2:<auth-user-uuid>` |
+| Journey-selected avatar path | `journey_avatar_path:<auth-user-uuid>` |
+| Journey local biography override | `journey_user_bio:<auth-user-uuid>` |
+| Map captured state | Own `public.captures` remote spot UUIDs; in-memory only |
+| Historical unassigned captures | Original `capture_records`, untouched |
+| Historical marker flags | Original `captured_spot_ids`, untouched and ignored by Map |
+| Historical avatar/bio | Original unscoped keys, untouched and not inherited by new accounts |
+
+Scoped records add optional `remoteCaptureId`, `remoteSpotId`, `clientCaptureId`; old JSON still deserializes. The scoped reader never calls the legacy loader/backfill and never copies legacy entries. Writes are serialized and idempotent by remote capture ID. New author snapshots use the initiating authenticated AppProfile UUID, displayName, username and bio, plus that account's local avatar choice; absent city/level are empty rather than fabricated demo profile values. Remote profile avatar URLs are not treated as local file paths.
+
+Journey and Pins still read local CaptureRecords, now only through `getUserCaptures(current AuthProfile.id)`. Tab recreation retains the existing refresh behavior. Search also reads this scoped source so it cannot expose new records from another account or attribute unassigned legacy records to the current user. Journey's header now displays the authenticated name/username and uses scoped avatar/bio keys; no layout redesign. Profile pages reached through Pins receive the scoped capture list and stored authenticated author.
+
+Legacy store APIs remain for old tests and later explicit development reconciliation, but the normal capture UI no longer writes them and authenticated capture-history screens no longer read them. Global legacy data is neither deleted nor uploaded. A user with only historical device-wide captures can therefore see an empty current Journey/Pins and uncaptured Map markers; this is intentional ownership isolation.
+
+### Rewards and remaining boundaries
+
+New capture compatibility Proof IDs preserve `BP-<legacy-spot-id>-<server-time-UTC-milliseconds>`; old Proof IDs and QR bytes are never rewritten. Map passes the locally formatted server instant, server distance and preserved-format proof into the existing reward-selection flow. No local success or reward opens on server rejection. Reward selection, offer ranking, My Rewards, QR, Partner Mode and redemption implementations/storage are unchanged.
+
+Consequently reward history still has the audit's **legacy device-wide/fixed-local-owner limitation**. This task isolates captures/markers/Journey/Pins, not reward ownership, saved-spot flags, reactions/comments, mock social users or partner redemption. Do not interpret the new authenticated capture author as proof that reward storage is already account-scoped. Reward ownership/token migration remains separate. Legacy social engagement still references spot IDs and may be shared between local cards; the feed architecture was not rewritten.
+
+Photos still use the camera's Android cache path on the originating device. Only the scoped local CaptureRecord stores that path. No Storage upload or photo-path column update occurs; remote `photo_storage_path` remains NULL. Cache eviction/reinstall can lose photos, and other devices can display captured Map state without local Journey photos. Process death between remote commit and local compatibility write can also leave a remote-only capture; reopening will reconcile markers without inventing a proof/reward. Durable photo storage and crash-resumable drafts are future work.
+
+### Manual Android acceptance tests still required
+
+1. **A — Camil:** Sign in, choose an uncaptured remote spot, take photo, Been, observe saving then reward selection. Return to captured marker. In Supabase Table Editor verify exactly one row, Camil's auth UUID, correct spot UUID, server distance/time and NULL photo_storage_path. Verify Journey/Pins show the saved photo and authenticated author.
+2. **B — Abel:** Sign out and sign in as Abel without reinstalling. Camil's new marker must be uncaptured and Camil's local photo absent from Abel's Journey/Pins/search. Capture a different spot; verify Abel's row and markers only.
+3. **C — switch back:** Sign back in as Camil. Camil's original marker/photo returns; Abel's capture marker/photo does not.
+4. **D — duplicate:** Normal UI blocks capture of an already captured marker. For a stale-client/other-device capture, verify already_captured refreshes Map without a second row, fabricated local photo/proof or reward unlock.
+5. **E — retry:** Interrupt network around Been/response, restore it, Retry Been. Confirm one client_capture_id for the attempt and one remote row. Double-tap Been and verify one save/reward transition. Reject outside radius and verify no success record or reward. If local persistence fails, verify Map is captured and local retry completes without another remote capture.
+6. **F — cold start:** Kill and relaunch Android. Session/profile/splash behavior stays unchanged. Map loads own remote captures through a neutral loading state, not legacy flags. Verify both accounts across restarts and a fresh install without local images.
+
+No live-device capture or real-account writes were performed by the integration tests. The automated repository transport test uses a loopback fake HTTP server; state/store/draft tests use fakes and mocked SharedPreferences. Final integration validation: modified/new Dart files formatted; `flutter analyze` reported no issues; `flutter test` passed all 47 tests, including 14 new capture tests and the camera-preview widget regression. `git diff --check` and new-file whitespace checks passed. The Android acceptance checklist above remains unexecuted.

@@ -6,6 +6,7 @@ import 'package:been/models/spot.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/services/mock_social_service.dart';
 import 'package:been/services/spot_service.dart';
+import 'package:been/features/auth/auth_scope.dart';
 
 class AppSearchDelegate extends SearchDelegate<void> {
   @override
@@ -51,7 +52,7 @@ class _SearchResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<CaptureRecord>>(
-      future: CaptureStore.getCaptures(),
+      future: CaptureStore.getUserCaptures(AuthScope.profileOf(context)?.id),
       builder: (context, snapshot) {
         final captures = snapshot.data ?? const <CaptureRecord>[];
         final normalized = query.trim().toLowerCase();
@@ -187,8 +188,7 @@ class _SearchResults extends StatelessWidget {
     if (query.isEmpty) return captures.take(5).toList();
 
     return captures.where((capture) {
-      final assignedUser =
-          capture.author;
+      final assignedUser = capture.author;
       return capture.spotName.toLowerCase().contains(query) ||
           capture.spotType.toLowerCase().contains(query) ||
           assignedUser.name.toLowerCase().contains(query) ||

@@ -11,6 +11,7 @@ import 'package:been/services/engagement_store.dart';
 import 'package:been/services/mock_social_service.dart';
 import 'package:been/services/saved_spot_store.dart';
 import 'package:been/services/spot_service.dart';
+import 'package:been/features/auth/auth_scope.dart';
 
 class PinsScreen extends StatefulWidget {
   const PinsScreen({super.key});
@@ -20,12 +21,16 @@ class PinsScreen extends StatefulWidget {
 }
 
 class _PinsScreenState extends State<PinsScreen> {
-  late Future<List<CaptureRecord>> _capturesFuture;
+  Future<List<CaptureRecord>> _capturesFuture = Future.value([]);
+  String? _userId;
 
   @override
-  void initState() {
-    super.initState();
-    _capturesFuture = CaptureStore.getCaptures();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final owner = AuthScope.profileOf(context)?.id;
+    if (_userId == owner) return;
+    _userId = owner;
+    _capturesFuture = CaptureStore.getUserCaptures(owner);
   }
 
   @override
@@ -33,6 +38,7 @@ class _PinsScreenState extends State<PinsScreen> {
     return Container(
       color: Colors.transparent,
       child: FutureBuilder<List<CaptureRecord>>(
+        key: ValueKey(_userId),
         future: _capturesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

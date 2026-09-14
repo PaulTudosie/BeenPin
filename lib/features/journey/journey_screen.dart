@@ -8,7 +8,7 @@ import 'package:been/core/theme/app_spacing.dart';
 import 'package:been/core/theme/app_typography.dart';
 import 'package:been/features/level/level_path_screen.dart';
 import 'package:been/services/capture_store.dart';
-import 'package:been/services/current_user_profile.dart';
+import 'package:been/features/auth/auth_scope.dart';
 import 'package:been/services/engagement_store.dart';
 import 'package:been/widgets/polaroid_tile.dart';
 
@@ -22,20 +22,28 @@ class JourneyScreen extends StatefulWidget {
 class _JourneyScreenState extends State<JourneyScreen> {
   String? _avatarPath;
   String? _userBio;
-  late Future<List<CaptureRecord>> _capturesFuture;
+  Future<List<CaptureRecord>> _capturesFuture = Future.value([]);
+  String? _userId;
 
   @override
-  void initState() {
-    super.initState();
-    _capturesFuture = CaptureStore.getCaptures();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final owner = AuthScope.profileOf(context)?.id;
+    if (owner == _userId) return;
+    _userId = owner;
+    _avatarPath = null;
+    _userBio = AuthScope.profileOf(context)?.bio;
+    _capturesFuture = CaptureStore.getUserCaptures(owner);
     _loadAvatarPath();
     _loadUserBio();
   }
 
   Future<void> _loadAvatarPath() async {
-    final savedPath = await CaptureStore.getAvatarPath();
+    final owner = _userId;
+    if (owner == null) return;
+    final savedPath = await CaptureStore.getAvatarPath(userId: owner);
 
-    if (!mounted) return;
+    if (!mounted || owner != _userId) return;
 
     setState(() {
       _avatarPath = savedPath;
@@ -43,9 +51,11 @@ class _JourneyScreenState extends State<JourneyScreen> {
   }
 
   Future<void> _saveAvatarPath(String path) async {
-    await CaptureStore.saveAvatarPath(path);
+    final owner = _userId;
+    if (owner == null) return;
+    await CaptureStore.saveAvatarPath(path, userId: owner);
 
-    if (!mounted) return;
+    if (!mounted || owner != _userId) return;
 
     setState(() {
       _avatarPath = path;
@@ -53,15 +63,19 @@ class _JourneyScreenState extends State<JourneyScreen> {
   }
 
   Future<void> _loadUserBio() async {
-    final bio = await CaptureStore.getUserBio();
-    if (!mounted) return;
+    final owner = _userId;
+    if (owner == null) return;
+    final bio = await CaptureStore.getUserBio(userId: owner);
+    if (!mounted || owner != _userId) return;
 
     setState(() {
-      _userBio = bio;
+      _userBio = bio ?? AuthScope.profileOf(context)?.bio;
     });
   }
 
   Future<void> _editUserBio() async {
+    final owner = _userId;
+    if (owner == null) return;
     final updated = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -72,11 +86,11 @@ class _JourneyScreenState extends State<JourneyScreen> {
       builder: (sheetContext) => _BioEditorSheet(initialText: _userBio),
     );
 
-    if (updated == null) return;
+    if (updated == null || !mounted || owner != _userId) return;
 
     final normalized = updated.trim();
-    await CaptureStore.saveUserBio(normalized);
-    if (!mounted) return;
+    await CaptureStore.saveUserBio(normalized, userId: owner);
+    if (!mounted || owner != _userId) return;
 
     setState(() {
       _userBio = normalized.isEmpty ? null : normalized;
@@ -110,9 +124,12 @@ class _JourneyScreenState extends State<JourneyScreen> {
     return Container(
       color: Colors.transparent,
       child: FutureBuilder<List<CaptureRecord>>(
+        key: ValueKey(_userId),
         future: _capturesFuture,
         builder: (context, snapshot) {
-          final captures = snapshot.data ?? const <CaptureRecord>[];
+          final captures = snapshot.connectionState == ConnectionState.done
+              ? snapshot.data ?? const <CaptureRecord>[]
+              : const <CaptureRecord>[];
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -764,7 +781,7 @@ class _ProfileHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    CurrentUserProfile.user.name,
+                    AuthScope.profileOf(context)?.displayName ?? '',
                     style: context.appTextStyles.screenTitle.copyWith(
                       height: 1.05,
                     ),
@@ -774,7 +791,7 @@ class _ProfileHeader extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          CurrentUserProfile.user.city,
+                          '@${AuthScope.profileOf(context)?.username ?? ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: context.appTextStyles.bodyText.copyWith(

@@ -14,15 +14,19 @@ import 'package:been/features/reward/reward_detail_screen.dart';
 import 'package:been/features/reward/reward_selection_sheet.dart';
 import 'package:been/features/spot/spot_detail_screen.dart';
 import 'package:been/models/spot.dart';
-import 'package:been/services/capture_store.dart';
+import 'package:been/features/auth/auth_scope.dart';
+import 'package:been/services/capture_draft.dart';
+import 'package:been/services/capture_repository.dart';
+import 'package:been/services/capture_state.dart';
 import 'package:been/services/saved_spot_store.dart';
 import 'package:been/services/spot_service.dart';
 import 'package:been/services/spot_repository.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key, this.spotRepository});
+  const MapScreen({super.key, this.spotRepository, this.captureRepository});
 
   final SpotRepository? spotRepository;
+  final CaptureRepository? captureRepository;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -39,6 +43,10 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   List<Spot> _spots = SpotService.getSpots();
   late final SpotRepository _spotRepository =
       widget.spotRepository ?? SupabaseSpotRepository();
+  late final CaptureRepository _captureRepository =
+      widget.captureRepository ?? SupabaseCaptureRepository();
+  late final CaptureState _captureState = CaptureState(_captureRepository);
+  String? _captureOwner;
   String? _spotNotice;
   bool _isLoadingSpots = false;
 
@@ -46,7 +54,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   BitmapDescriptor? _capturedIcon;
   BitmapDescriptor? _uncapturedIcon;
   BitmapDescriptor? _savedIcon;
-  Set<String> _capturedIds = <String>{};
   Set<String> _savedIds = <String>{};
   Set<Marker> _markers = <Marker>{};
   bool _isReady = false;
@@ -61,12 +68,18 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     SavedSpotStore.version.addListener(_handleSavedSpotsChanged);
+    _captureState.addListener(_handleCapturesChanged);
     _bootstrap();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final owner = AuthScope.profileOf(context)?.id;
+    if (_captureOwner != owner) {
+      _captureOwner = owner;
+      unawaited(_captureState.loadForUser(owner));
+    }
     if (_isReady) {
       _scheduleSavedRefresh();
     }
@@ -76,6 +89,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _scheduleSavedRefresh();
+      unawaited(_captureState.loadForUser(_captureOwner));
     }
   }
 
@@ -83,6 +97,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     SavedSpotStore.version.removeListener(_handleSavedSpotsChanged);
+    _captureState.removeListener(_handleCapturesChanged);
+    _captureState.dispose();
     _positionStream?.cancel();
     _mapController?.dispose();
     super.dispose();
@@ -91,7 +107,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   Future<void> _bootstrap() async {
     await Future.wait([
       _loadMarkerIcons(),
-      _loadCapturedIds(),
       _loadSavedIds(),
       _loadSpots(),
       _initUserLocation(),
@@ -150,8 +165,10 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     return BitmapDescriptor.bytes(byteData!.buffer.asUint8List());
   }
 
-  Future<void> _loadCapturedIds() async {
-    _capturedIds = await CaptureStore.getCapturedIds();
+  void _handleCapturesChanged() {
+    if (!mounted) return;
+    _rebuildMarkers();
+    setState(() {});
   }
 
   Future<void> _loadSavedIds() async {
@@ -301,8 +318,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       return;
     }
 
+    final capturedIds = _captureState.capturedLocalIds(_spots);
     final markers = _spots.map((spot) {
-      final captured = _capturedIds.contains(spot.id);
+      final captured = capturedIds.contains(spot.id);
       final saved = _savedIds.contains(spot.id);
       final icon = captured
           ? _capturedIcon!
@@ -365,30 +383,42 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _runVerifiedCapture(Spot spot) async {
+    final profile = AuthScope.profileOf(context);
+    if (profile == null || _captureRepository.currentUserId != profile.id) {
+      _showCaptureGateMessage('Sign in again to save your capture.');
+      return;
+    }
+    if (spot.remoteId == null) {
+      _showCaptureGateMessage('Refresh the spot catalog before capturing.');
+      return;
+    }
     final proof = await _verifyCaptureAccess(spot);
     if (proof == null || !mounted) return;
-
-    final result = await Navigator.of(context).push<String>(
+    if (_captureRepository.currentUserId != profile.id) return;
+    final draft = CaptureDraft(
+      repository: _captureRepository,
+      profile: profile,
+      spot: spot,
+      latitude: proof.latLng.latitude,
+      longitude: proof.latLng.longitude,
+      onAccepted: (capture) => _captureState.accept(profile.id, capture),
+    );
+    final result = await Navigator.of(context).push<CaptureCompletion>(
       MaterialPageRoute(
-        builder: (_) => CaptureScreen(spot: spot),
+        builder: (_) => CaptureScreen(spot: spot, draft: draft),
       ),
     );
-
-    if (result == null || result.isEmpty) return;
-
-    final capture = await CaptureStore.saveCapture(
-      spot: spot,
-      imagePath: result,
-      userLatitude: proof.latLng.latitude,
-      userLongitude: proof.latLng.longitude,
-      distanceMeters: proof.distanceMeters,
-    );
-
-    await _loadCapturedIds();
-    _rebuildMarkers();
-
-    if (!mounted) return;
-    setState(() {});
+    if (!mounted || _captureRepository.currentUserId != profile.id) return;
+    if (result == null) {
+      // A cancelled/ambiguous request may already have committed remotely.
+      unawaited(_captureState.loadForUser(profile.id));
+      return;
+    }
+    final capture = result.local;
+    if (capture == null) {
+      _showCaptureGateMessage("You've already Been here.");
+      return;
+    }
 
     final proofId = capture.proofId ??
         'BP-${spot.id}-${capture.capturedAt.toUtc().millisecondsSinceEpoch}';
@@ -400,7 +430,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       proofId: proofId,
     );
 
-    if (selectedReward == null || !mounted) {
+    if (selectedReward == null ||
+        !mounted ||
+        _captureRepository.currentUserId != profile.id) {
       return;
     }
 
@@ -517,10 +549,31 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isReady) {
+    if (!_isReady || _captureState.loading) {
       return const Center(
         child: CircularProgressIndicator(),
       );
+    }
+
+    // The frozen offline catalog has no UUIDs, so it cannot be joined to
+    // authoritative captures. Do not mislabel those fallback pins uncaptured.
+    final missingRemoteSpots = _spots.any((spot) => spot.remoteId == null);
+    if (!_captureState.loaded ||
+        _captureState.error != null ||
+        missingRemoteSpots) {
+      return Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(missingRemoteSpots
+            ? 'Could not load the spot catalog. Try again.'
+            : _captureState.error ?? 'Sign in to load your captures.'),
+        TextButton(
+            onPressed: _isLoadingSpots
+                ? null
+                : () => missingRemoteSpots
+                    ? _loadSpots()
+                    : _captureState.loadForUser(_captureOwner),
+            child: const Text('Retry')),
+      ]));
     }
 
     _scheduleSavedRefresh();
