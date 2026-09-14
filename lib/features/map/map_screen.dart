@@ -17,9 +17,12 @@ import 'package:been/models/spot.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/services/saved_spot_store.dart';
 import 'package:been/services/spot_service.dart';
+import 'package:been/services/spot_repository.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({super.key, this.spotRepository});
+
+  final SpotRepository? spotRepository;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -33,7 +36,11 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     zoom: 14.2,
   );
 
-  final List<Spot> _spots = SpotService.getSpots();
+  List<Spot> _spots = SpotService.getSpots();
+  late final SpotRepository _spotRepository =
+      widget.spotRepository ?? SupabaseSpotRepository();
+  String? _spotNotice;
+  bool _isLoadingSpots = false;
 
   GoogleMapController? _mapController;
   BitmapDescriptor? _capturedIcon;
@@ -86,6 +93,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       _loadMarkerIcons(),
       _loadCapturedIds(),
       _loadSavedIds(),
+      _loadSpots(),
       _initUserLocation(),
     ]);
 
@@ -95,6 +103,30 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     setState(() {
       _isReady = true;
     });
+  }
+
+  Future<void> _loadSpots() async {
+    if (_isLoadingSpots) return;
+    _isLoadingSpots = true;
+    if (mounted) setState(() {});
+    try {
+      final spots = await _spotRepository.getActiveSpots();
+      if (!mounted) return;
+      SpotService.useRemoteSpots(spots);
+      _spots = spots;
+      _spotNotice = spots.isEmpty ? 'No active spots are available yet.' : null;
+    } catch (error) {
+      if (!mounted) return;
+      // Keep the existing catalog, including a previously successful empty one.
+      _spotNotice = 'Could not refresh spots. Showing the last available map.';
+      debugPrint('Spot catalog load failed: $error');
+    } finally {
+      _isLoadingSpots = false;
+      if (mounted) {
+        _rebuildMarkers();
+        setState(() {});
+      }
+    }
   }
 
   Future<void> _loadMarkerIcons() async {
@@ -438,6 +470,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       });
     }
 
+    // Preserve the global MVP testing gate during the definitions migration.
+    // Remote radii are modeled/seeded, but production enforcement is separate.
     if (distanceMeters > _captureRadiusMeters) {
       final roundedDistance = distanceMeters.round();
       _showCaptureGateMessage(
@@ -518,6 +552,29 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
             },
           ),
         ),
+        if (_spotNotice != null)
+          Positioned(
+            top: 12,
+            left: 16,
+            right: 16,
+            child: Material(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12, right: 4),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(_spotNotice!)),
+                    TextButton(
+                      onPressed: _isLoadingSpots ? null : _loadSpots,
+                      child: Text(_isLoadingSpots ? 'Loading…' : 'Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         Positioned(
           right: 16,
           bottom: 20,

@@ -1,6 +1,14 @@
 import '../models/spot.dart';
 
 class SpotService {
+  // Frozen migration fallback and historical name resolver. Remote definitions
+  // replace the active catalog atomically, never merge into this snapshot.
+  static List<Spot>? _activeSpots;
+
+  static void useRemoteSpots(List<Spot> spots) {
+    _activeSpots = List<Spot>.unmodifiable(spots);
+  }
+
   static final List<Spot> _spots = [
     Spot(
         id: '1',
@@ -95,15 +103,17 @@ class SpotService {
   ];
 
   static List<Spot> getSpots() {
-    return List<Spot>.unmodifiable(_spots);
+    return _activeSpots ?? List<Spot>.unmodifiable(_spots);
   }
 
   static Spot? findSpotByIdOrName({
     String? spotId,
     String? spotName,
   }) {
+    // Retain old aliases for persisted records when a remote name changes.
+    final lookupSpots = [...?_activeSpots, ..._spots];
     if (spotId != null && spotId.isNotEmpty) {
-      for (final spot in _spots) {
+      for (final spot in lookupSpots) {
         if (spot.id == spotId) {
           return spot;
         }
@@ -115,7 +125,7 @@ class SpotService {
       return null;
     }
 
-    for (final spot in _spots) {
+    for (final spot in lookupSpots) {
       if (_normalizeSpotLookupValue(spot.name) == normalizedTarget) {
         return spot;
       }

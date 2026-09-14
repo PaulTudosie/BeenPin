@@ -171,7 +171,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final spot = widget.spot;
     final category = _displayCategory(spot.type);
     final area = _displayArea(spot.name);
-    final description = _descriptionForSpot(spot.name, spot.type);
+    final description =
+        spot.description ?? _descriptionForSpot(spot.name, spot.type);
     final partnerOffer = PilotPartnerService.offerForSpot(spot.id);
     final palette = _spotColors(spot.type);
     final heroImageAsset = _spotHeroImageAsset(spot);

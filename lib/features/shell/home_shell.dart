@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:been/features/auth/account_dialog.dart';
 import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_spacing.dart';
 import 'package:been/core/theme/app_typography.dart';
@@ -54,6 +55,10 @@ class _HomeShellState extends State<HomeShell> {
   int get _currentIndex => HomeTab.values.indexOf(_currentTab);
 
   void _onHeaderMenuAction(HeaderMenuAction action) {
+    if (action == HeaderMenuAction.account) {
+      showDialog<void>(context: context, builder: (_) => const AccountDialog());
+      return;
+    }
     if (action == HeaderMenuAction.myRewards) {
       Navigator.of(context).push(MaterialPageRoute<void>(
         builder: (_) => const MyRewardsScreen(),
@@ -313,11 +318,7 @@ class _HeaderMenuContent {
       case HeaderMenuAction.myRewards:
         throw StateError('My Rewards opens its own screen.');
       case HeaderMenuAction.account:
-        return const _HeaderMenuContent(
-          title: 'Account',
-          body:
-              'Account controls will include profile editing, follow history, rewards, and sign-in options.',
-        );
+        throw StateError('Account opens its own dialog.');
       case HeaderMenuAction.partnerAccount:
         return const _HeaderMenuContent(
           title: 'Partner Account',
