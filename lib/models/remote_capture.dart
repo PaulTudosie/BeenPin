@@ -7,6 +7,7 @@ class RemoteCapture {
   final double distanceFromSpotMeters;
   final String spotSlug;
   final String spotName;
+  final String? photoStoragePath;
 
   const RemoteCapture({
     required this.id,
@@ -16,7 +17,18 @@ class RemoteCapture {
     required this.distanceFromSpotMeters,
     required this.spotSlug,
     required this.spotName,
+    this.photoStoragePath,
   });
+
+  RemoteCapture withPhotoStoragePath(String path) => RemoteCapture(
+      id: id,
+      spotId: spotId,
+      clientCaptureId: clientCaptureId,
+      capturedAt: capturedAt,
+      distanceFromSpotMeters: distanceFromSpotMeters,
+      spotSlug: spotSlug,
+      spotName: spotName,
+      photoStoragePath: path);
 
   static bool isUuid(String value) => RegExp(
         r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
@@ -50,6 +62,7 @@ class RemoteCapture {
       distanceFromSpotMeters: distance.toDouble(),
       spotSlug: text('spot_slug'),
       spotName: text('spot_name'),
+      photoStoragePath: json['photo_storage_path'] as String?,
     );
   }
 }

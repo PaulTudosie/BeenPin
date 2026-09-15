@@ -15,6 +15,7 @@ import 'package:been/services/hidden_spot_service.dart';
 import 'package:been/widgets/app_background.dart';
 import 'package:been/widgets/sub_header_tabs.dart';
 import 'package:been/widgets/top_header.dart';
+import 'package:been/widgets/pending_capture_photos_banner.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -213,6 +214,7 @@ class _HomeShellState extends State<HomeShell> {
               children: screens,
             ),
           ),
+          const PendingCapturePhotosBanner(),
         ],
       ),
       bottomNavigationBar: SubHeaderTabs(

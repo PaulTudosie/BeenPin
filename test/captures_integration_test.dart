@@ -15,6 +15,7 @@ import 'package:been/services/reward_selection_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:been/services/capture_photo_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const ownerA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -87,10 +88,23 @@ class FakeCaptures implements CaptureRepository {
   }
 }
 
+class FakePhotos implements CapturePhotos {
+  Object? failure;
+  @override
+  Future<void> enqueue(
+      String owner, String captureId, String localPath) async {}
+  @override
+  Future<String> retry(String owner, String captureId) async {
+    if (failure != null) throw failure!;
+    return CapturePhotoType.storagePath(owner, captureId, 'jpg');
+  }
+}
+
 CaptureDraft draft(FakeCaptures repository,
         {void Function(RemoteCapture)? onAccepted}) =>
     CaptureDraft(
       repository: repository,
+      photos: FakePhotos(),
       profile: profile,
       spot: spot(),
       latitude: 44.4521,
@@ -169,7 +183,7 @@ void main() {
     expect(repo.attempts.first['spotId'], spotUuid);
     expect(result.local!.imagePath, '/cache/first.jpg');
     expect(attempt.imagePath, '/cache/first.jpg');
-    expect(accepted, 1);
+    expect(accepted, 2); // Capture acceptance, then attachment metadata.
   });
 
   test('duplicate Been submissions share one RPC and local record', () async {
@@ -262,6 +276,7 @@ void main() {
     var accepted = false;
     final attempt = CaptureDraft(
         repository: repo,
+        photos: FakePhotos(),
         profile: profile,
         spot: spot(),
         latitude: 44,
@@ -430,6 +445,54 @@ void main() {
     expect(returned!.local!.imagePath, '/cache/original.jpg');
     expect(returned!.remote.clientCaptureId, attempt.clientCaptureId);
     expect(find.text('Open draft'), findsOneWidget);
+  });
+
+  testWidgets(
+      'photo failure offers retry and continuation without a second capture',
+      (tester) async {
+    final repo = FakeCaptures();
+    final photos = FakePhotos()
+      ..failure = const CapturePhotoException('photo_upload_failed');
+    final attempt = CaptureDraft(
+        repository: repo,
+        photos: photos,
+        profile: profile,
+        spot: spot(),
+        latitude: 44,
+        longitude: 26,
+        onAccepted: (_) {});
+    await expectLater(attempt.submit('/cache/photo.jpg'),
+        throwsA(isA<CapturePhotoException>()));
+    CaptureCompletion? returned;
+    await tester.pumpWidget(MaterialApp(
+        home: Builder(
+            builder: (context) => Scaffold(
+                body: TextButton(
+                    onPressed: () async {
+                      returned = await Navigator.of(context)
+                          .push<CaptureCompletion>(MaterialPageRoute(
+                              builder: (_) =>
+                                  CaptureScreen(spot: spot(), draft: attempt)));
+                    },
+                    child: const Text('Open draft'))))));
+    await tester.tap(find.text('Open draft'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Been ✅'));
+    await tester.pumpAndSettle();
+    expect(find.text('Retry Upload'), findsOneWidget);
+    expect(
+        find.text(photos.failure is CapturePhotoException
+            ? (photos.failure as CapturePhotoException).message
+            : ''),
+        findsOneWidget);
+    expect(returned, isNull);
+    await tester.tap(find.text('Continue to rewards'));
+    await tester.pumpAndSettle();
+    expect(returned!.local, isNotNull);
+    expect(returned!.remote.photoStoragePath, isNull);
+    expect(repo.attempts, hasLength(1));
+    expect(attempt.claimRewardTransition(), isTrue);
+    expect(attempt.claimRewardTransition(), isFalse);
   });
 
   test(

@@ -5,6 +5,7 @@ import '../models/remote_capture.dart';
 import '../models/spot.dart';
 import 'capture_repository.dart';
 import 'capture_store.dart';
+import 'capture_photo_storage.dart';
 
 class CaptureCompletion {
   const CaptureCompletion(this.remote, this.local);
@@ -22,10 +23,13 @@ class CaptureDraft {
     required this.latitude,
     required this.longitude,
     required this.onAccepted,
+    CapturePhotos? photos,
     this.persist = CaptureStore.saveRemoteCapture,
-  }) : clientCaptureId = _newUuid();
+  })  : photos = photos ?? CapturePhotoStorage.instance,
+        clientCaptureId = _newUuid();
 
   final CaptureRepository repository;
+  final CapturePhotos photos;
   final AppProfile profile;
   final Spot spot;
   final double latitude;
@@ -44,6 +48,11 @@ class CaptureDraft {
   RemoteCapture? _accepted;
   Future<CaptureCompletion>? _pending;
   CaptureCompletion? _completed;
+  CaptureRecord? _local;
+  bool _photoQueued = false;
+  bool _rewardClaimed = false;
+  bool get accepted => _accepted != null;
+  bool get canContinue => _accepted != null && _local != null;
   bool get started => _imagePath != null;
   String? get imagePath => _imagePath;
 
@@ -94,9 +103,13 @@ class CaptureDraft {
     _checkOwner();
     onAccepted(
         _accepted!); // Map updates even if the following local write fails.
-    CaptureRecord local;
+    if (!_photoQueued && _accepted!.photoStoragePath == null) {
+      await photos.enqueue(profile.id, _accepted!.id, _imagePath!);
+      _photoQueued = true;
+    }
+    _checkOwner();
     try {
-      local = await persist(
+      _local ??= await persist(
         profile: profile,
         spot: spot,
         remote: _accepted!,
@@ -108,7 +121,32 @@ class CaptureDraft {
       throw const CaptureException('local_save_failed');
     }
     _checkOwner();
-    return _completed = CaptureCompletion(_accepted!, local);
+    if (_accepted!.photoStoragePath == null) {
+      final path = await photos.retry(profile.id, _accepted!.id);
+      _checkOwner();
+      _accepted = _accepted!.withPhotoStoragePath(path);
+      _local = CaptureRecord.fromJson(
+          {..._local!.toJson(), 'photoStoragePath': path});
+      onAccepted(_accepted!);
+    }
+    return _completed = CaptureCompletion(_accepted!, _local);
+  }
+
+  /// Leaving photo recovery to the durable queue must not invalidate the capture.
+  CaptureCompletion continueWithoutPhoto() {
+    _checkOwner();
+    if (!canContinue || _pending != null) {
+      throw const CaptureException('capture_retry_required');
+    }
+    return _completed = CaptureCompletion(_accepted!, _local);
+  }
+
+  /// The camera route can hand its completion to rewards at most once.
+  bool claimRewardTransition() {
+    if (_rewardClaimed || _completed?.local == null) return false;
+    _checkOwner();
+    _rewardClaimed = true;
+    return true;
   }
 
   static String _newUuid() {

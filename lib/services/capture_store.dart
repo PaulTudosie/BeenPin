@@ -22,6 +22,7 @@ class CaptureRecord {
   final String? remoteCaptureId;
   final String? remoteSpotId;
   final String? clientCaptureId;
+  final String? photoStoragePath;
 
   const CaptureRecord({
     required this.author,
@@ -37,6 +38,7 @@ class CaptureRecord {
     this.remoteCaptureId,
     this.remoteSpotId,
     this.clientCaptureId,
+    this.photoStoragePath,
   });
 
   Map<String, dynamic> toJson() {
@@ -54,6 +56,7 @@ class CaptureRecord {
       if (remoteCaptureId != null) 'remoteCaptureId': remoteCaptureId,
       if (remoteSpotId != null) 'remoteSpotId': remoteSpotId,
       if (clientCaptureId != null) 'clientCaptureId': clientCaptureId,
+      if (photoStoragePath != null) 'photoStoragePath': photoStoragePath,
     };
   }
 
@@ -80,6 +83,7 @@ class CaptureRecord {
       remoteCaptureId: json['remoteCaptureId'] as String?,
       remoteSpotId: json['remoteSpotId'] as String?,
       clientCaptureId: json['clientCaptureId'] as String?,
+      photoStoragePath: json['photoStoragePath'] as String?,
     );
   }
 }
@@ -149,6 +153,7 @@ class CaptureStore {
         remoteCaptureId: remote.id,
         remoteSpotId: remote.spotId,
         clientCaptureId: remote.clientCaptureId,
+        photoStoragePath: remote.photoStoragePath,
       );
       records.insert(0, record);
       if (!await prefs.setStringList(
@@ -158,6 +163,32 @@ class CaptureStore {
         throw StateError('Could not persist capture');
       }
       return record;
+    });
+    final gate =
+        result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    _pendingRemoteSave = gate;
+    return result.whenComplete(() {
+      if (identical(_pendingRemoteSave, gate)) _pendingRemoteSave = null;
+    });
+  }
+
+  static Future<void> attachPhotoPath(
+      String owner, String captureId, String path) {
+    final previous = _pendingRemoteSave ?? Future<void>.value();
+    final result = previous.then((_) async {
+      final records = await getUserCaptures(owner);
+      final index = records.indexWhere((r) => r.remoteCaptureId == captureId);
+      // A restart may recover the photo before a compatibility record was saved.
+      if (index < 0) return;
+      records[index] = CaptureRecord.fromJson({
+        ...records[index].toJson(),
+        'photoStoragePath': path,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      if (!await prefs.setStringList(_userKey('capture_records_v2', owner),
+          records.map((r) => jsonEncode(r.toJson())).toList())) {
+        throw StateError('Could not persist photo attachment');
+      }
     });
     final gate =
         result.then<void>((_) {}, onError: (Object _, StackTrace __) {});

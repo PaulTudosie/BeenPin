@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:been/models/spot.dart';
 import 'package:been/services/capture_draft.dart';
 import 'package:been/services/capture_repository.dart';
+import 'package:been/services/capture_photo_storage.dart';
 
 class CaptureScreen extends StatefulWidget {
   final Spot spot;
@@ -83,7 +84,9 @@ class _CaptureScreenState extends State<CaptureScreen> {
       if (mounted) Navigator.of(context).pop(result);
     } catch (error) {
       if (mounted) {
-        setState(() => _saveError = CaptureException.fromError(error).message);
+        setState(() => _saveError = error is CapturePhotoException
+            ? error.message
+            : CaptureException.fromError(error).message);
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -122,7 +125,9 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       label: _saving
                           ? 'Saving…'
                           : _saveError != null
-                              ? 'Retry Been'
+                              ? widget.draft.accepted
+                                  ? 'Retry Upload'
+                                  : 'Retry Been'
                               : 'Been ✅',
                       onTap: _saving ? null : _confirm,
                       primary: true,
@@ -131,6 +136,18 @@ class _CaptureScreenState extends State<CaptureScreen> {
                 ),
               ),
               if (_saving) const Center(child: CircularProgressIndicator()),
+              if (!_saving && _saveError != null && widget.draft.canContinue)
+                Positioned(
+                  left: 20,
+                  right: 20,
+                  bottom: 8,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context)
+                        .pop(widget.draft.continueWithoutPhoto()),
+                    child: const Text('Continue to rewards',
+                        style: TextStyle(color: Colors.white)),
+                  ),
+                ),
               if (_saveError != null)
                 Positioned(
                   left: 20,

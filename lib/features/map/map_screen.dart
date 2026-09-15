@@ -420,6 +420,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       return;
     }
 
+    if (!draft.claimRewardTransition()) return;
     final proofId = capture.proofId ??
         'BP-${spot.id}-${capture.capturedAt.toUtc().millisecondsSinceEpoch}';
     final selectedReward = await RewardSelectionSheet.show(

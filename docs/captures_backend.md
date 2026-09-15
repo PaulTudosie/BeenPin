@@ -1,6 +1,6 @@
 # BeenPin captures database foundation
 
-The next Storage stage is prepared in [capture_photos_storage.md](capture_photos_storage.md), with the manual migration at `supabase/capture_photos_storage.sql`. It has not been executed. Once manually applied, it replaces the NULL-only photo constraint described below and adds owner-only Storage policies plus `attach_capture_photo`; Flutter uploads remain future work.
+The Storage stage is now deployed (confirmed by the user) and Flutter uploads are implemented; see [capture_photos_storage.md](capture_photos_storage.md) for the current flow and pending-photo recovery. The original schema/Flutter integration descriptions below document the earlier stage. No SQL was executed or modified during photo upload integration.
 
 Prepared 2026-09-15. The SQL foundation was originally supplied without execution. The subsequent Flutter integration task confirms that this schema and RPC are now deployed and working; no SQL was executed during the integration. `supabase/captures_schema.sql` remains the manual deployment artifact for another environment, not an app startup script. It wraps deployment in a transaction and finishes with read-only metadata verification queries.
 

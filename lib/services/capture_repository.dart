@@ -130,7 +130,7 @@ class SupabaseCaptureRepository implements CaptureRepository {
             .from('captures')
             .select(
               'capture_id:id,spot_id,client_capture_id,captured_at,distance_from_spot_m,'
-              'spot_slug:spot_slug_snapshot,spot_name:spot_name_snapshot',
+              'spot_slug:spot_slug_snapshot,spot_name:spot_name_snapshot,photo_storage_path',
             )
             .order('captured_at', ascending: false)
             .order('id')

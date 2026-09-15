@@ -1,6 +1,6 @@
 # Capture photo Storage foundation
 
-Status: **prepared for manual deployment; SQL has not been executed**. Flutter remains unchanged and does not upload photos or call the new RPC. Existing captures, local photos and the bucket have not been modified.
+Status: **Storage backend deployed, confirmed by the user; Flutter upload integration implemented**. This integration does not execute or edit SQL, change policies/bucket settings, upload to the live project during development, or migrate existing captures/photos. The deployment section below documents the original SQL artifact for other environments; this environment does not need it rerun.
 
 ## Deployment
 
@@ -84,25 +84,90 @@ The capture lock serializes competing attachments: after one succeeds, another u
 
 Object verification checks Storage's database record, which is the SQL boundary available to this RPC; it is not a separate download or blob integrity check. Upload bytes through the Storage API, never by inserting metadata rows directly. Trusted administrators can bypass client policies, and later administrative deletion can leave a stale attachment; cleanup and reconciliation are not implemented here.
 
-## Future Flutter flow and downloads
+## Implemented Flutter flow
 
-1. Call `create_capture` and receive the server capture UUID.
-2. Construct and retain the deterministic owner/capture path and chosen extension.
-3. Upload/upsert the local file to the private bucket with the authenticated session.
-4. Call `attach_capture_photo` with that capture UUID and path.
+1. `CaptureDraft` calls `create_capture` and receives the server capture UUID. Map accepts it immediately, even if later photo work fails.
+2. `CapturePhotoStorage.enqueue` persists the capture UUID, owner UUID and local image path in SharedPreferences before photo inspection or upload. The draft saves the existing local compatibility record before uploading, so temporary photo failure does not remove Journey/Pins data.
+3. The service inspects the file, constructs and persists its deterministic path/MIME, then calls the existing initialized Supabase client's `storage.from('capture-photos').upload(File, fileOptions: FileOptions(contentType: ..., upsert: true))`.
+4. After upload succeeds, the service persists `uploaded: true` and calls `attach_capture_photo` with only `p_capture_id` and `p_storage_path`. It validates the returned capture UUID and path, updates local photo metadata, then clears the pending record.
+5. The draft returns completion to the existing reward flow. Only the original camera completion can claim that transition, once. Photo recovery never calls `create_capture`, opens reward selection or writes rewards.
 
-If upload fails, the capture remains valid and its photo path remains NULL. Retain the local photo for retry. Current photos are Android cache files, so eviction/reinstall can remove that retry source; this migration does not add durable local file storage or a retry queue.
+The service separates the durable queue (`CapturePhotoStorage`), upload/RPC transport (`SupabaseCapturePhotoRemote`) and file/path validation (`CapturePhotoType`). Widgets contain no Storage API calls. `CapturePhotos` and `CapturePhotoRemote` permit tests with fake transports; normal code uses the shared service and existing Supabase client. No dependencies, conversion, compression, new buckets, public URLs or persisted signed URLs are introduced.
 
-If upload succeeds but attachment fails or its response is lost, retry upload/attach with the **same path**. Upsert addresses the same object key, and the attachment RPC is idempotent. Do not create another capture or generate a random photo filename for the retry.
+### Camera audit and MIME handling
+
+`CaptureScreen` uses `CameraController` at `ResolutionPreset.high`, calls `takePicture()` and retains the resulting `XFile.path`. It neither copies nor transforms the file. The locked Android CameraX plugin (0.6.27) creates `CAP*.jpg` in the Android application cache directory. No existing conversion/compression pipeline was found. The draft retains the first selected path and disables retake once submission starts; code does not delete it after upload.
+
+Uploads require a supported filename extension and matching header signature: JPEG (`FF D8 FF`), PNG (eight-byte PNG signature), or WebP (`RIFF` and `WEBP`). JPEG `.jpg` and `.jpeg` normalize to `original.jpg` / `image/jpeg`; PNG uses `original.png` / `image/png`; WebP uses `original.webp` / `image/webp`. Unsupported or mismatched files are rejected without relabeling/conversion. This checks the format signature, not a full image decode. A local 15 MiB upper guard avoids oversized uploads; the deployed bucket's actual byte limit remains authoritative and may reject a smaller file.
+
+The central helper constructs `<auth UUID>/<server capture UUID>/original.<ext>` using canonical lowercase UUIDs. No username, email, spot ID, client capture ID or local filename becomes remote ownership identity. The path/MIME are persisted before upload and cannot change silently during retries.
+
+### Recovery, persistence and account switches
+
+Pending keys are `capture_photo_pending_v1:<auth UUID>:<capture UUID>`, one JSON entry per capture. Fields are `userId`, `captureId`, `localPath`, nullable `storagePath`/`mimeType` until successful inspection, and `uploaded`. No token, GPS or profile snapshot is added to this queue. Each record has its own key, preventing concurrent captures from overwriting a shared pending list. Simultaneous retries for the same record share one Future in the production singleton.
+
+On upload failure, the capture and compatibility record remain valid. Camera shows a friendly error, **Retry Upload**, and **Continue to rewards**. Continue leaves photo recovery pending; it does not claim an uploaded photo. Closing the camera without completing the reward transition also leaves pending photos available, but does not create a reward retrospectively.
+
+The shell displays a compact pending-photo banner above the existing tab bar. It reloads the current user's pending metadata on account change, app resume and queue changes. After restart, tap **Retry Upload** to process that user's queue. This is explicit foreground recovery, not automatic background uploading. Tab mapping and Map styling are unchanged.
+
+An ambiguous upload retries an upsert at the **same path**. Once upload success is recorded, retries reuse that object and call attachment only, including after a lost attachment response or restart. `photo_not_uploaded` resets that record to permit re-uploading at the same path. Successful attachment synchronizes any existing local record before clearing pending state, so a local save failure can retry attachment safely.
+
+Every processing stage checks the current auth UUID. Old-account results cannot continue into attachment or rewards after a switch. Each individual upload/RPC also pins its Authorization header to the initiating session token in memory, without changing shared headers: SDK file reads/auth refresh cannot substitute Abel's credentials into Camil's request. Work already sent can finish under Camil's original authorization; later stages stop. Returning to Camil restores his pending entry. No service-role credential is used.
+
+Uploads have a 45-second wait timeout, attachment RPCs 15 seconds, and implicit Storage retries are disabled in favor of the visible queue. A Dart Future timeout does not cancel an already-sent request; fixed ownership and deterministic paths make subsequent retries safe. No raw Storage/PostgREST text or tokens are shown/logged. Named attachment errors and permission, size, format and generic network failures map to friendly photo-specific messages. `photo_already_attached` does not overwrite the attached path or local metadata; the pending entry remains for explicit resolution.
+
+If the local file is missing before upload, recovery removes that pending entry and reports that the capture remains valid without an available local photo. If upload success was already recorded, attachment can finish even after the local file disappears. Cache eviction/reinstall can still lose unuploaded bytes; metadata persistence does not make Android cache durable. A lost upload response followed by cache loss may leave an unattached object. No destructive cleanup or automatic photo substitution is attempted.
+
+### Local compatibility and remaining Journey boundary
+
+`RemoteCapture` and the safe own-capture projection now include optional `photoStoragePath`. `CaptureRecord` stores optional `photoStoragePath` alongside the existing optional `remoteCaptureId`, `remoteSpotId` and `clientCaptureId`. Old JSON with none of these fields still parses. Successful attachment propagates its returned path into the current draft and existing user-scoped local record without changing the Proof ID, timestamps, author or reward contract.
+
+`public.captures.photo_storage_path` is the authoritative photo identity. The Android image path is only a cache/reference. Journey/Pins still render local images; a full remote history/download migration is not implemented.
 
 The bucket stays private. Future Journey can fetch the owner's remote capture path and use authenticated Storage download/read access, including on another device. NULL paths represent valid captures without an attached remote photo and must remain supported. Do not generate permanent public URLs.
 
-Public Pins/feed access needs a separate publication/access design. This foundation does not grant other users access, publish capture rows, expose capture GPS or implement a social feed. Existing Flutter Map, Journey, Pins, rewards, QR, Partner Mode, Auth, profiles and spots are untouched.
+Public Pins/feed access needs a separate publication/access design. This integration grants no public access, publishes no capture rows and exposes no capture GPS. Rewards, QR, Partner Mode, auth architecture, profiles, spots and radius remain unchanged.
 
-Legacy device-wide photos have no trustworthy per-user ownership mapping and are not migrated. Current account-scoped records still reference local cache paths; this SQL does not backfill their photos or reconstruct Journey history. Existing remote captures remain unchanged until a future authenticated client explicitly uploads and attaches.
+Legacy device-wide photos have no trustworthy ownership mapping and are not migrated. The two existing NULL-photo test captures are not queued, backfilled or assigned arbitrary current photos. Only new accepted capture attempts enqueue photos. Already-captured reconciliation still fabricates no image/proof/reward. Process death between remote acceptance and the first successful local queue write can still lose the photo link; full capture drafts are not persisted. Death between queue persistence and compatibility save can recover the remote photo without reconstructing a local Journey entry or reward. Those are boundaries for future remote Journey/draft recovery.
 
 ## Validation and remaining runtime checks
 
-Preparation includes static SQL/security review and `git diff --check`; no SQL, RPC, upload or live Storage permission test is executed in this task. Flutter validation is unnecessary because no Flutter files or dependencies change.
+Automated tests use mock SharedPreferences, temporary local images, fake capture/Storage transports and a loopback HTTP server exercising the real Supabase SDK multipart upload and RPC. They do not contact the live Supabase project. Coverage includes signatures/MIME, deterministic paths, exact attachment parameters, capture validity after upload failure, stable retries across restart, account switching, conflict handling, queue cleanup, compatible old JSON, photo metadata propagation, camera recovery controls and a single reward transition. Validation commands: format modified Dart files, `flutter analyze`, `flutter test`, `git diff --check`.
 
-After manual deployment, separately validate with two authenticated accounts and an unauthenticated client: own upload/read/upsert succeeds; wrong owner/capture, malformed filename and missing capture fail; foreign reads/overwrites and client DELETE fail; attaching before upload fails; same-path retry succeeds; a different uploaded path is rejected; concurrent attachments preserve the first path. Check size/MIME enforcement through the Storage API. These are future runtime acceptance checks, not evidence claimed by this preparation.
+Integration validation: `flutter analyze` reported no issues; the full `flutter test` suite passed all 66 tests (19 added in this task); modified Dart files were formatted and whitespace checks passed. SQL, policies, bucket configuration and dependencies were not changed.
+
+### Manual Android tests remaining
+
+**TEST A — NEW PHOTO**
+
+1. Sign in as Camil.
+2. Pick an uncaptured spot.
+3. Capture photo.
+4. Tap Been.
+5. Confirm `create_capture` succeeds.
+6. Confirm photo uploads.
+7. Confirm `attach_capture_photo` succeeds.
+8. Confirm reward flow continues.
+
+In Supabase, verify `public.captures.photo_storage_path` is `<Camil UUID>/<capture UUID>/original.<ext>`. In Storage, verify `capture-photos` → Camil UUID → capture UUID → `original.<ext>`.
+
+**TEST B — PRIVATE OWNERSHIP**
+
+1. Sign out Camil.
+2. Sign in Abel.
+3. Abel must not obtain/read Camil's capture photo through normal app access. For an explicit RLS download check, use authenticated Storage access with Abel's session in a controlled test; remote download UI is not implemented here.
+4. Abel's own future photo must upload to Abel's own folder.
+
+**TEST C — RESTART**
+
+1. Create another capture or simulate a pending photo upload by disconnecting after remote capture success.
+2. Kill/restart the app.
+3. Verify the pending banner belongs to the same authenticated user; switching accounts hides the other user's pending work.
+4. Restore connectivity and tap Retry Upload. Verify no second capture is created.
+5. Verify the same Storage path is reused and the pending entry disappears after attachment. Also test a lost attachment response and cache eviction.
+
+**TEST D — NORMAL SUCCESS**
+
+After successful attachment, verify Map still shows the correct captured state, Journey and Pins retain the local entry, the reward appears once, and QR/Partner Mode remain unchanged. Test Retry Upload and Continue to rewards after a temporary upload failure; later shell recovery must not award another reward.
+
+These device/live permission tests remain unexecuted by this implementation task. Existing user-reported Camil/Abel capture isolation tests predate photo upload integration.
