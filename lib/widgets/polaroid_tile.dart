@@ -3,7 +3,8 @@ import 'package:been/core/theme/app_colors.dart';
 import 'package:been/core/theme/app_typography.dart';
 
 class PolaroidTile extends StatelessWidget {
-  final ImageProvider image;
+  final ImageProvider? image;
+  final Widget? photo;
   final String spotName;
   final String cityCountry;
   final String dateText;
@@ -14,7 +15,8 @@ class PolaroidTile extends StatelessWidget {
 
   const PolaroidTile({
     super.key,
-    required this.image,
+    this.image,
+    this.photo,
     required this.spotName,
     required this.cityCountry,
     required this.dateText,
@@ -22,7 +24,7 @@ class PolaroidTile extends StatelessWidget {
     this.reactionCount = 0,
     this.commentCount = 0,
     this.hasReacted = false,
-  });
+  }) : assert(image != null || photo != null);
 
   @override
   Widget build(BuildContext context) {
@@ -49,17 +51,18 @@ class PolaroidTile extends StatelessWidget {
                 aspectRatio: 1.0,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image(
-                    image: image,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.border,
-                      child: const Icon(
-                        Icons.image_not_supported_rounded,
-                        color: AppColors.textMuted,
+                  child: photo ??
+                      Image(
+                        image: image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: AppColors.border,
+                          child: const Icon(
+                            Icons.image_not_supported_rounded,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                 ),
               ),
             ),

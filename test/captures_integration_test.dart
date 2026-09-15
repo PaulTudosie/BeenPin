@@ -532,7 +532,8 @@ void main() {
         request.response.write(jsonEncode([row()]));
       } else {
         selects.add(request.uri.queryParameters['select'] ?? '');
-        request.response.write(jsonEncode([row()]));
+        request.response
+            .write(jsonEncode([row()..remove('distance_from_spot_m')]));
       }
       await request.response.close();
     });
@@ -556,5 +557,6 @@ void main() {
     expect(await repo.getOwnCaptures(), hasLength(1));
     expect(selects.single, contains('capture_id:id'));
     expect(selects.single, isNot(contains('capture_location')));
+    expect(selects.single, isNot(contains('distance_from_spot_m')));
   });
 }

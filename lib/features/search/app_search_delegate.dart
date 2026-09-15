@@ -3,12 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:been/features/profile/user_profile_screen.dart';
 import 'package:been/features/spot/spot_detail_screen.dart';
 import 'package:been/models/spot.dart';
-import 'package:been/services/capture_store.dart';
+import 'package:been/models/journey_capture.dart';
+import 'package:been/services/journey_repository.dart';
+import 'package:been/features/journey/journey_screen.dart';
 import 'package:been/services/mock_social_service.dart';
 import 'package:been/services/spot_service.dart';
 import 'package:been/features/auth/auth_scope.dart';
 
 class AppSearchDelegate extends SearchDelegate<void> {
+  AppSearchDelegate({JourneyRepository? repository})
+      : _repository = repository ?? JourneyRepository();
+  final JourneyRepository _repository;
   @override
   String? get searchFieldLabel => 'Search users, spots, pins...';
 
@@ -33,29 +38,56 @@ class AppSearchDelegate extends SearchDelegate<void> {
 
   @override
   Widget buildResults(BuildContext context) {
-    return _SearchResults(query: query);
+    return _SearchResults(query: query, repository: _repository);
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    return _SearchResults(query: query);
+    return _SearchResults(query: query, repository: _repository);
   }
 }
 
-class _SearchResults extends StatelessWidget {
+class _SearchResults extends StatefulWidget {
   final String query;
+  final JourneyRepository repository;
 
   const _SearchResults({
     required this.query,
+    required this.repository,
   });
 
   @override
+  State<_SearchResults> createState() => _SearchResultsState();
+}
+
+class _SearchResultsState extends State<_SearchResults> {
+  String? _owner;
+  Future<List<JourneyCapture>> _history = Future.value([]);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final owner = AuthScope.profileOf(context)?.id;
+    if (_owner == owner) return;
+    _owner = owner;
+    _reload();
+  }
+
+  void _reload() {
+    _history =
+        _owner == null ? Future.value([]) : widget.repository.load(_owner!);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<CaptureRecord>>(
-      future: CaptureStore.getUserCaptures(AuthScope.profileOf(context)?.id),
+    return FutureBuilder<List<JourneyCapture>>(
+      key: ValueKey(_owner),
+      future: _history,
       builder: (context, snapshot) {
-        final captures = snapshot.data ?? const <CaptureRecord>[];
-        final normalized = query.trim().toLowerCase();
+        final captures = snapshot.connectionState == ConnectionState.done
+            ? snapshot.data ?? const <JourneyCapture>[]
+            : const <JourneyCapture>[];
+        final normalized = widget.query.trim().toLowerCase();
         final spots = _filterSpots(normalized);
         final users = MockSocialService.searchUsers(normalized);
         final pins = _filterPins(captures, normalized);
@@ -64,6 +96,14 @@ class _SearchResults extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
+        if (snapshot.hasError) {
+          return Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Could not load your captured places.'),
+            TextButton(
+                onPressed: () => setState(_reload), child: const Text('Retry')),
+          ]));
+        }
         if (normalized.isEmpty) {
           return ListView(
             padding: const EdgeInsets.all(20),
@@ -105,13 +145,11 @@ class _SearchResults extends StatelessWidget {
                     title: Text(user.name),
                     subtitle: Text('${user.handle} • ${user.city}'),
                     onTap: () {
-                      final userCaptures =
-                          MockSocialService.capturesForUser(captures, user);
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => UserProfileScreen(
                             user: user,
-                            captures: userCaptures,
+                            captures: const [],
                           ),
                         ),
                       );
@@ -144,27 +182,17 @@ class _SearchResults extends StatelessWidget {
             if (pins.isNotEmpty) ...[
               const _SectionLabel(title: 'Pins'),
               ...pins.map((record) {
-                final assignedUser = record.author;
-
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const CircleAvatar(
-                    child: Icon(Icons.photo_camera_back_rounded),
-                  ),
+                      child: Icon(Icons.photo_camera_back_rounded)),
                   title: Text(record.spotName),
-                  subtitle: Text('Pinned by ${assignedUser.name}'),
-                  onTap: () {
-                    final userCaptures = MockSocialService.capturesForUser(
-                        captures, assignedUser);
-                    Navigator.of(context).push(
+                  subtitle: const Text('Captured by you'),
+                  onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => UserProfileScreen(
-                          user: assignedUser,
-                          captures: userCaptures,
-                        ),
-                      ),
-                    );
-                  },
+                          builder: (_) => Scaffold(
+                              appBar: AppBar(title: const Text('Journey')),
+                              body: const SafeArea(child: JourneyScreen())))),
                 );
               }),
             ],
@@ -184,16 +212,21 @@ class _SearchResults extends StatelessWidget {
     }).toList();
   }
 
-  List<CaptureRecord> _filterPins(List<CaptureRecord> captures, String query) {
+  List<JourneyCapture> _filterPins(
+      List<JourneyCapture> captures, String query) {
     if (query.isEmpty) return captures.take(5).toList();
-
-    return captures.where((capture) {
-      final assignedUser = capture.author;
-      return capture.spotName.toLowerCase().contains(query) ||
-          capture.spotType.toLowerCase().contains(query) ||
-          assignedUser.name.toLowerCase().contains(query) ||
-          assignedUser.handle.toLowerCase().contains(query);
-    }).toList();
+    final profile = AuthScope.profileOf(context);
+    return captures
+        .where((capture) =>
+            capture.spotName.toLowerCase().contains(query) ||
+            capture.spotSlug.toLowerCase().contains(query) ||
+            SpotService.getSpots().any((spot) =>
+                spot.remoteId == capture.spotId &&
+                spot.type.toLowerCase().contains(query)) ||
+            (profile?.displayName.toLowerCase().contains(query) ?? false) ||
+            (profile != null &&
+                '@${profile.username}'.toLowerCase().contains(query)))
+        .toList();
   }
 }
 

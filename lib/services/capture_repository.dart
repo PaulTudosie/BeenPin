@@ -120,6 +120,7 @@ class SupabaseCaptureRepository implements CaptureRepository {
   Future<List<RemoteCapture>> getOwnCaptures() async {
     try {
       final owner = _requireOwner();
+      final token = _supabase.auth.currentSession!.accessToken;
       final captures = <RemoteCapture>[];
       const pageSize = 500;
       for (var offset = 0;; offset += pageSize) {
@@ -129,7 +130,7 @@ class SupabaseCaptureRepository implements CaptureRepository {
             .schema('public')
             .from('captures')
             .select(
-              'capture_id:id,spot_id,client_capture_id,captured_at,distance_from_spot_m,'
+              'capture_id:id,spot_id,client_capture_id,captured_at,'
               'spot_slug:spot_slug_snapshot,spot_name:spot_name_snapshot,photo_storage_path',
             )
             .order('captured_at', ascending: false)
@@ -138,9 +139,11 @@ class SupabaseCaptureRepository implements CaptureRepository {
               offset,
               offset + pageSize - 1,
             )
+            .setHeader('Authorization', 'Bearer $token')
             .timeout(const Duration(seconds: 15));
         _checkOwner(owner);
-        captures.addAll(rows.map(RemoteCapture.fromJson));
+        captures.addAll(rows
+            .map((row) => RemoteCapture.fromJson(row, requireDistance: false)));
         if (rows.length < pageSize) break;
       }
       return captures;

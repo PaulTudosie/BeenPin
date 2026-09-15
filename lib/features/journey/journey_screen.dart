@@ -10,20 +10,47 @@ import 'package:been/features/level/level_path_screen.dart';
 import 'package:been/services/capture_store.dart';
 import 'package:been/features/auth/auth_scope.dart';
 import 'package:been/services/engagement_store.dart';
+import 'package:been/models/journey_capture.dart';
+import 'package:been/services/journey_controller.dart';
+import 'package:been/services/spot_service.dart';
+import 'journey_photo.dart';
 import 'package:been/widgets/polaroid_tile.dart';
 
 class JourneyScreen extends StatefulWidget {
-  const JourneyScreen({super.key});
+  const JourneyScreen({super.key, this.controller, this.refreshTick = 0});
+  final JourneyController? controller;
+  final int refreshTick;
 
   @override
   State<JourneyScreen> createState() => _JourneyScreenState();
 }
 
-class _JourneyScreenState extends State<JourneyScreen> {
+class _JourneyScreenState extends State<JourneyScreen>
+    with WidgetsBindingObserver {
   String? _avatarPath;
   String? _userBio;
-  Future<List<CaptureRecord>> _capturesFuture = Future.value([]);
+  late final JourneyController _journey =
+      widget.controller ?? JourneyController();
   String? _userId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _journey.refresh();
+  }
+
+  @override
+  void didUpdateWidget(JourneyScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshTick != widget.refreshTick) _journey.refresh();
+  }
+
+  Future<void> _retryPhotos() => _journey.refresh(invalidatePhotos: true);
 
   @override
   void didChangeDependencies() {
@@ -33,9 +60,16 @@ class _JourneyScreenState extends State<JourneyScreen> {
     _userId = owner;
     _avatarPath = null;
     _userBio = AuthScope.profileOf(context)?.bio;
-    _capturesFuture = CaptureStore.getUserCaptures(owner);
+    _journey.loadForUser(owner);
     _loadAvatarPath();
     _loadUserBio();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (widget.controller == null) _journey.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAvatarPath() async {
@@ -97,8 +131,16 @@ class _JourneyScreenState extends State<JourneyScreen> {
     });
   }
 
-  Future<void> _showAvatarPicker(List<CaptureRecord> captures) async {
-    if (captures.isEmpty) return;
+  Future<void> _showAvatarPicker(List<JourneyCapture> captures) async {
+    final owner = _userId;
+    final available =
+        captures.where((c) => c.localPhotoPathFallback != null).toList();
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:
+              Text('Capture a photo on this device to choose an avatar.')));
+      return;
+    }
 
     await showModalBottomSheet<void>(
       context: context,
@@ -107,15 +149,18 @@ class _JourneyScreenState extends State<JourneyScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => _AvatarPickerSheet(
-        captures: captures,
-        onAvatarSelected: (path) async {
-          await _saveAvatarPath(path);
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
-        },
-      ),
+      builder: (context) => AuthScope.profileOf(context)?.id != owner
+          ? const SizedBox.shrink()
+          : _AvatarPickerSheet(
+              captures: available,
+              onAvatarSelected: (path) async {
+                if (_userId != owner) return;
+                await _saveAvatarPath(path);
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
     );
   }
 
@@ -123,152 +168,175 @@ class _JourneyScreenState extends State<JourneyScreen> {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.transparent,
-      child: FutureBuilder<List<CaptureRecord>>(
-        key: ValueKey(_userId),
-        future: _capturesFuture,
-        builder: (context, snapshot) {
-          final captures = snapshot.connectionState == ConnectionState.done
-              ? snapshot.data ?? const <CaptureRecord>[]
-              : const <CaptureRecord>[];
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      child: ListenableBuilder(
+        listenable: _journey,
+        builder: (context, _) {
+          final captures = _journey.items;
+          if (_journey.loading) {
             return const Center(child: CircularProgressIndicator());
+          }
+          if (_journey.error != null && captures.isEmpty) {
+            return Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(_journey.error!),
+              TextButton(onPressed: _retryPhotos, child: const Text('Retry')),
+            ]));
           }
 
           final progress = _buildProgress(captures.length);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl,
-              AppSpacing.lg,
-              AppSpacing.xl,
-              AppSpacing.xxxl,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 980),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _ProfileHeader(
-                      levelName: progress.levelName,
-                      current: captures.length,
-                      target: progress.target,
-                      nextLevelName: progress.nextLevelName,
-                      avatarPath: _avatarPath,
-                      userBio: _userBio,
-                      onAvatarTap: () => _showAvatarPicker(captures),
-                      onBioTap: _editUserBio,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    Row(
+          return RefreshIndicator(
+              onRefresh: _retryPhotos,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                  AppSpacing.xxxl,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 980),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text.rich(
-                            const TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: "Places you've ",
-                                  style: TextStyle(
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: 'Been',
-                                  style: TextStyle(
-                                    color: AppColors.brandBlue,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            style: context.appTextStyles.screenTitle,
-                          ),
+                        if (_journey.error != null)
+                          Row(children: [
+                            Expanded(child: Text(_journey.error!)),
+                            TextButton(
+                                onPressed: _retryPhotos,
+                                child: const Text('Retry')),
+                          ]),
+                        _ProfileHeader(
+                          levelName: progress.levelName,
+                          current: captures.length,
+                          target: progress.target,
+                          nextLevelName: progress.nextLevelName,
+                          avatarPath: _avatarPath,
+                          userBio: _userBio,
+                          onAvatarTap: () => _showAvatarPicker(captures),
+                          onBioTap: _editUserBio,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceSoft.withValues(
-                              alpha: 0.86,
+                        const SizedBox(height: AppSpacing.xl),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text.rich(
+                                const TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: "Places you've ",
+                                      style: TextStyle(
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: 'Been',
+                                      style: TextStyle(
+                                        color: AppColors.brandBlue,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                style: context.appTextStyles.screenTitle,
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.72),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceSoft.withValues(
+                                  alpha: 0.86,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color:
+                                      AppColors.border.withValues(alpha: 0.72),
+                                ),
+                              ),
+                              child: Text(
+                                '${captures.length} capture${captures.length == 1 ? '' : 's'}',
+                                style:
+                                    context.appTextStyles.captionText.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            '${captures.length} capture${captures.length == 1 ? '' : 's'}',
-                            style: context.appTextStyles.captionText.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    if (captures.isEmpty)
-                      const _EmptyJourneyState()
-                    else
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          const horizontalSpacing = AppSpacing.lg;
-                          const verticalSpacing = 14.0;
+                        const SizedBox(height: AppSpacing.md),
+                        if (captures.isEmpty)
+                          const _EmptyJourneyState()
+                        else
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              const horizontalSpacing = AppSpacing.lg;
+                              const verticalSpacing = 14.0;
 
-                          final availableWidth = constraints.maxWidth;
+                              final availableWidth = constraints.maxWidth;
 
-                          final crossAxisCount = availableWidth >= 900
-                              ? 4
-                              : availableWidth >= 600
-                                  ? 3
-                                  : 2;
+                              final crossAxisCount = availableWidth >= 900
+                                  ? 4
+                                  : availableWidth >= 600
+                                      ? 3
+                                      : 2;
 
-                          final tileWidth = (availableWidth -
-                                  (horizontalSpacing * (crossAxisCount - 1))) /
-                              crossAxisCount;
+                              final tileWidth = (availableWidth -
+                                      (horizontalSpacing *
+                                          (crossAxisCount - 1))) /
+                                  crossAxisCount;
 
-                          final tileHeight =
-                              tileWidth + (availableWidth >= 600 ? 92 : 88);
+                              final tileHeight =
+                                  tileWidth + (availableWidth >= 600 ? 92 : 88);
 
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: captures.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: horizontalSpacing,
-                              mainAxisSpacing: verticalSpacing,
-                              mainAxisExtent: tileHeight,
-                            ),
-                            itemBuilder: (context, index) {
-                              final item = captures[index];
-                              final dateText = DateFormat(
-                                'dd MMM yyyy',
-                              ).format(item.capturedAt);
+                              return GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: captures.length,
+                                findChildIndexCallback: (key) {
+                                  final index = captures.indexWhere(
+                                      (item) => ValueKey(item.id) == key);
+                                  return index < 0 ? null : index;
+                                },
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: horizontalSpacing,
+                                  mainAxisSpacing: verticalSpacing,
+                                  mainAxisExtent: tileHeight,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final item = captures[index];
+                                  final dateText = DateFormat(
+                                    'dd MMM yyyy',
+                                  ).format(item.capturedAt.toLocal());
 
-                              return _EngagedPolaroidTile(
-                                record: item,
-                                dateText: dateText,
-                                onTap: () => _openPhotoPreview(item),
+                                  return _EngagedPolaroidTile(
+                                    key: ValueKey(item.id),
+                                    record: item,
+                                    dateText: dateText,
+                                    onTap: () => _openPhotoPreview(item),
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                      ),
-                  ],
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
+              ));
         },
       ),
     );
   }
 
-  void _openPhotoPreview(CaptureRecord record) {
+  void _openPhotoPreview(JourneyCapture record) {
+    final owner = _userId;
     showDialog<void>(
       context: context,
       builder: (_) => LayoutBuilder(
@@ -293,18 +361,22 @@ class _JourneyScreenState extends State<JourneyScreen> {
                 child: InteractiveViewer(
                   minScale: 1,
                   maxScale: 4,
-                  child: Image.file(
-                    File(record.imagePath),
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.surfaceSoft,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.image_not_supported_outlined,
-                        size: 36,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                  child: ListenableBuilder(
+                    listenable: _journey,
+                    builder: (_, __) {
+                      if (AuthScope.profileOf(context)?.id != owner) {
+                        return const SizedBox.shrink();
+                      }
+                      if (!_journey.items.any((item) => item.id == record.id)) {
+                        return const SizedBox.shrink();
+                      }
+                      final current = _journey.items
+                          .firstWhere((item) => item.id == record.id);
+                      return JourneyPhoto(
+                          key: ValueKey(current.id),
+                          capture: current,
+                          fit: BoxFit.contain);
+                    },
                   ),
                 ),
               ),
@@ -474,7 +546,7 @@ class _BioEditorSheetState extends State<_BioEditorSheet> {
 }
 
 class _AvatarPickerSheet extends StatelessWidget {
-  final List<CaptureRecord> captures;
+  final List<JourneyCapture> captures;
   final ValueChanged<String> onAvatarSelected;
 
   const _AvatarPickerSheet({
@@ -529,11 +601,12 @@ class _AvatarPickerSheet extends StatelessWidget {
 
                     return InkWell(
                       borderRadius: BorderRadius.circular(18),
-                      onTap: () => onAvatarSelected(item.imagePath),
+                      onTap: () =>
+                          onAvatarSelected(item.localPhotoPathFallback!),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(18),
                         child: Image.file(
-                          File(item.imagePath),
+                          File(item.localPhotoPathFallback!),
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
                             color: AppColors.surfaceSoft,
@@ -559,11 +632,12 @@ class _AvatarPickerSheet extends StatelessWidget {
 }
 
 class _EngagedPolaroidTile extends StatelessWidget {
-  final CaptureRecord record;
+  final JourneyCapture record;
   final String dateText;
   final VoidCallback onTap;
 
   const _EngagedPolaroidTile({
+    super.key,
     required this.record,
     required this.dateText,
     required this.onTap,
@@ -572,12 +646,16 @@ class _EngagedPolaroidTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<CaptureEngagement>(
-      future: EngagementStore.getEngagement(record.spotId),
+      future: EngagementStore.getEngagement(SpotService.getSpots()
+              .where((spot) => spot.remoteId == record.spotId)
+              .map((spot) => spot.id)
+              .firstOrNull ??
+          record.spotSlug),
       builder: (context, snapshot) {
         final engagement = snapshot.data;
 
         return PolaroidTile(
-          image: FileImage(File(record.imagePath)),
+          photo: JourneyPhoto(key: ValueKey(record.id), capture: record),
           spotName: record.spotName,
           cityCountry: 'Bucharest, Romania',
           dateText: dateText,

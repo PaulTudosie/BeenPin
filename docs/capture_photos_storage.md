@@ -155,7 +155,7 @@ In Supabase, verify `public.captures.photo_storage_path` is `<Camil UUID>/<captu
 
 1. Sign out Camil.
 2. Sign in Abel.
-3. Abel must not obtain/read Camil's capture photo through normal app access. For an explicit RLS download check, use authenticated Storage access with Abel's session in a controlled test; remote download UI is not implemented here.
+3. Abel must not obtain/read Camil's capture photo through normal app access. For an explicit RLS download check, use authenticated Storage access with Abel's session in a controlled test; Journey now renders private signed URLs; see `journey_remote.md` for its device checks.
 4. Abel's own future photo must upload to Abel's own folder.
 
 **TEST C — RESTART**
@@ -168,6 +168,10 @@ In Supabase, verify `public.captures.photo_storage_path` is `<Camil UUID>/<captu
 
 **TEST D — NORMAL SUCCESS**
 
-After successful attachment, verify Map still shows the correct captured state, Journey and Pins retain the local entry, the reward appears once, and QR/Partner Mode remain unchanged. Test Retry Upload and Continue to rewards after a temporary upload failure; later shell recovery must not award another reward.
+After successful attachment, verify Map still shows the correct captured state, Journey shows the remote capture and Storage photo while Pins retains its local compatibility entry, the reward appears once, and QR/Partner Mode remain unchanged. Test Retry Upload and Continue to rewards after a temporary upload failure; later shell recovery must not award another reward.
 
 These device/live permission tests remain unexecuted by this implementation task. Existing user-reported Camil/Abel capture isolation tests predate photo upload integration.
+
+## Remote Journey follow-up
+
+Journey now reconstructs private history from remote captures and uses temporary signed URLs for uploaded photos. See [Remote Journey](journey_remote.md) for ownership, fallback, URL lifetime and the current device acceptance plan. Pins and rewards remain unchanged. The backend/photo upload device verification reported before this migration does not replace testing the new Journey UI.

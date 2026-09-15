@@ -4,7 +4,7 @@ class RemoteCapture {
   final String spotId;
   final String clientCaptureId;
   final DateTime capturedAt;
-  final double distanceFromSpotMeters;
+  final double? distanceFromSpotMeters;
   final String spotSlug;
   final String spotName;
   final String? photoStoragePath;
@@ -34,7 +34,8 @@ class RemoteCapture {
         r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
       ).hasMatch(value);
 
-  factory RemoteCapture.fromJson(Map<String, dynamic> json) {
+  factory RemoteCapture.fromJson(Map<String, dynamic> json,
+      {bool requireDistance = true}) {
     String text(String key, {bool uuid = false}) {
       final value = json[key];
       if (value is! String ||
@@ -49,9 +50,9 @@ class RemoteCapture {
     final distance = json['distance_from_spot_m'];
     if (date == null ||
         !date.isUtc ||
-        distance is! num ||
-        !distance.isFinite ||
-        distance < 0) {
+        (requireDistance && distance == null) ||
+        (distance != null &&
+            (distance is! num || !distance.isFinite || distance < 0))) {
       throw const FormatException('Invalid capture time or distance');
     }
     return RemoteCapture(
@@ -59,7 +60,7 @@ class RemoteCapture {
       spotId: text('spot_id', uuid: true),
       clientCaptureId: text('client_capture_id', uuid: true),
       capturedAt: date,
-      distanceFromSpotMeters: distance.toDouble(),
+      distanceFromSpotMeters: (distance as num?)?.toDouble(),
       spotSlug: text('spot_slug'),
       spotName: text('spot_name'),
       photoStoragePath: json['photo_storage_path'] as String?,

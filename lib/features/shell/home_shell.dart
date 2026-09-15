@@ -188,9 +188,9 @@ class _HomeShellState extends State<HomeShell> {
         ),
       ),
       KeyedSubtree(
-        key: ValueKey('journey-${_tabRefreshTick[HomeTab.journey]}'),
-        child: const AppBackground(
-          child: JourneyScreen(),
+        key: const ValueKey('journey'),
+        child: AppBackground(
+          child: JourneyScreen(refreshTick: _tabRefreshTick[HomeTab.journey]!),
         ),
       ),
     ];
