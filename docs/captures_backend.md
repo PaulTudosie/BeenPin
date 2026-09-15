@@ -1,5 +1,7 @@
 # BeenPin captures database foundation
 
+The next Storage stage is prepared in [capture_photos_storage.md](capture_photos_storage.md), with the manual migration at `supabase/capture_photos_storage.sql`. It has not been executed. Once manually applied, it replaces the NULL-only photo constraint described below and adds owner-only Storage policies plus `attach_capture_photo`; Flutter uploads remain future work.
+
 Prepared 2026-09-15. The SQL foundation was originally supplied without execution. The subsequent Flutter integration task confirms that this schema and RPC are now deployed and working; no SQL was executed during the integration. `supabase/captures_schema.sql` remains the manual deployment artifact for another environment, not an app startup script. It wraps deployment in a transaction and finishes with read-only metadata verification queries.
 
 The SQL foundation follows the fixed product decisions supplied after `captures_audit.md`; that earlier document remains the historical audit. It uses the smaller schema, mandatory proof coordinates, Auth-user deletion cascade, server timestamps, and no import fields. Its original delivery made no Flutter or local-data changes. The Flutter integration below now changes new capture creation, Map capture ownership and the local sources for Journey/Pins/search. Spots, profiles, rewards/QR, Partner Mode and Hidden implementations remain unchanged.
